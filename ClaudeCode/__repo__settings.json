@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test)",
+      "Bash(make lint)",
+      "Bash(make typecheck)",
+      "Bash(npm ci)",
+      "Bash(pnpm install --frozen-lockfile)",
+      "Bash(pytest -q)",
+      "Bash(gh pr diff*)"
+    ],
+    "ask": [
+      "Bash(gh pr create*)",
+      "Bash(docker build *)"
+    ]
+  },
+
+  "sandbox": {
+    "filesystem": {
+      "allowWrite": [
+        "./.pytest_cache",
+        "./node_modules/.cache",
+        "./coverage",
+        "./.next",
+        "./target"
+      ]
+    }
+  }
+}

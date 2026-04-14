@@ -1,0 +1,206 @@
+{
+  "defaultMode": "auto",
+  "disableBypassPermissionsMode": true,
+
+  "allowManagedHooksOnly": true,
+
+  "allowManagedMcpServersOnly": true,
+  "mcpServers": {
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"]
+    },
+    "jira": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@example/jira-mcp"]
+    }
+  },
+  "allowedMcpServers": [
+    "github",
+    "jira"
+  ],
+
+  "permissions": {
+    "deny": [
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.azure/**)",
+      "Read(~/.config/gcloud/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.npmrc)",
+      "Read(~/.netrc)",
+      "Read(~/.docker/config.json)",
+      "Read(~/.kube/config)",
+      "Read(~/.terraform.d/**)",
+      "Read(~/.vault-token)",
+
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Read(./secrets/**)",
+
+      "Read(/etc/passwd)",
+      "Read(/etc/shadow)",
+
+      "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Edit(./**/.env)",
+      "Edit(./**/.env.*)",
+      "Edit(./secrets/**)",
+
+      "Edit(./.git/**)",
+      "Edit(./.husky/**)",
+
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(nc *)",
+      "Bash(netcat *)",
+      "Bash(ncat *)",
+      "Bash(socat *)",
+
+      "Bash(sudo *)",
+      "Bash(su *)",
+
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+
+      "Bash(*|bash*)",
+      "Bash(*|sh*)",
+      "Bash(*|zsh*)",
+      "Bash(*|fish*)",
+      "Bash(*| python*)",
+      "Bash(*| node*)",
+      "Bash(eval *)",
+      "Bash(xargs *)"
+    ],
+
+    "ask": [
+      "Bash(git push *)",
+      "Bash(gh pr create*)",
+      "Bash(gh pr merge*)",
+      "Bash(npm install *)",
+      "Bash(pnpm add *)",
+      "Bash(yarn add *)",
+      "Bash(pip install *)",
+      "Bash(poetry add *)",
+      "Bash(go get *)",
+      "Bash(cargo add *)",
+      "Bash(docker build *)",
+      "Bash(docker run *)"
+    ],
+
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git checkout -b *)",
+
+      "Bash(gh pr view*)",
+      "Bash(gh issue view*)",
+      "Bash(gh repo view*)",
+
+      "Bash(npm test*)",
+      "Bash(npm run test*)",
+      "Bash(npm run lint*)",
+      "Bash(npm run typecheck*)",
+
+      "Bash(pnpm test*)",
+      "Bash(pnpm lint*)",
+
+      "Bash(pytest*)",
+      "Bash(ruff check*)",
+      "Bash(mypy*)",
+      "Bash(go test*)",
+      "Bash(cargo test*)"
+    ]
+  },
+
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "autoAllowBashIfSandboxed": false,
+    "allowUnsandboxedCommands": false,
+
+    "filesystem": {
+      "allowRead": [
+        "."
+      ],
+      "allowWrite": [
+        ".",
+        "./tmp",
+        "./build",
+        "./dist",
+        "./coverage"
+      ],
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws",
+        "~/.azure",
+        "~/.config/gcloud",
+        "~/.gnupg",
+        "~/.npmrc",
+        "~/.netrc",
+        "~/.docker",
+        "~/.kube",
+        "~/.terraform.d",
+        "~/.vault-token",
+        "~/Library/Keychains"
+      ],
+      "denyWrite": [
+        "/etc",
+        "/usr/local/bin",
+        "~/.ssh",
+        "~/.gnupg"
+      ],
+      "allowManagedReadPathsOnly": true
+    },
+
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "api.github.com",
+        "objects.githubusercontent.com",
+        "raw.githubusercontent.com",
+        "registry.npmjs.org",
+        "pypi.org",
+        "files.pythonhosted.org",
+        "proxy.golang.org",
+        "crates.io",
+        "index.crates.io",
+        "registry-1.docker.io",
+        "auth.docker.io",
+        "production.cloudflare.docker.com"
+      ],
+      "allowManagedDomainsOnly": true,
+      "allowLocalBinding": false,
+      "allowAllUnixSockets": false
+    }
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/claude/hooks/bash-policy-check.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/claude/hooks/cc-redact-wrapper.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

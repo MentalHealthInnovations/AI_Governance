@@ -1,0 +1,25 @@
+rules:
+  - name: env_values
+    match:
+      path:
+        - ".env"
+        - ".env.*"
+        - "**/.env"
+        - "**/.env.*"
+        - "secrets/**"
+    action: redact
+
+  - name: api_keys
+    match:
+      content_regex:
+        - "(?i)(api[_-]?key\\s*=\\s*.+)"
+        - "(?i)(secret\\s*=\\s*.+)"
+        - "(?i)(token\\s*=\\s*.+)"
+        - "(?i)(password\\s*=\\s*.+)"
+    action: redact
+
+  - name: private_keys
+    match:
+      content_regex:
+        - "-----BEGIN [A-Z ]*PRIVATE KEY-----"
+    action: block

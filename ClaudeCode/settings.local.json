@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(just test)",
+      "Bash(task test)"
+    ]
+  },
+
+  "sandbox": {
+    "filesystem": {
+      "allowWrite": [
+        "./scratch",
+        "./playground-output"
+      ]
+    }
+  }
+}

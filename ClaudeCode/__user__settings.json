@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(npm run lint*)",
+      "Bash(npm run test*)"
+    ],
+    "ask": [
+      "Bash(git push *)"
+    ]
+  }
+}
