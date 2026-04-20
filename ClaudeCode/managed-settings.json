@@ -5,16 +5,6 @@
   "allowManagedHooksOnly": true,
 
   "allowManagedMcpServersOnly": true,
-  "mcpServers": {
-    "jira": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@example/jira-mcp"]
-    }
-  },
-  "allowedMcpServers": [
-    "jira"
-  ],
 
   "permissions": {
     "deny": [
