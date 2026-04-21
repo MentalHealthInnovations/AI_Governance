@@ -71,20 +71,32 @@ allowed_patterns=(
   "^git clone"
   "^git help"
   
-  # Non-git tools
-  "^gh\s"
-  "^npm\s"
-  "^pnpm\s"
-  "^yarn\s"
-  "^pip\s"
-  "^pip3\s"
-  "^poetry\s"
-  "^pytest\s"
-  "^ruff\s"
-  "^mypy\s"
-  "^go\s"
-  "^cargo\s"
-  "^docker\s"
+  # GitHub CLI
+  "^gh\s+(issue|pr|repo|gist|secret|label|run|release)"
+  
+  # npm/pnpm/yarn - safe operations
+  "^npm\s+(install|ci|run|test|lint|audit|list|search|view|info|outdated)"
+  "^pnpm\s+(install|run|test|lint|audit|list|search|view|outdated)"
+  "^yarn\s+(install|add|run|test|lint|audit|list|info)"
+  
+  # Python package managers
+  "^pip\s+(install|list|show|search|check)"
+  "^pip3\s+(install|list|show|search|check)"
+  "^poetry\s+(install|add|run|show|search|lock|lock.*--no-update|update)"
+  
+  # Python testing and linting
+  "^pytest"
+  "^ruff\s+(check|format|format.*--check|lint)"
+  "^mypy"
+  
+  # Go
+  "^go\s+(build|run|test|fmt|get|install|mod|version)"
+  
+  # Rust
+  "^cargo\s+(build|run|test|check|fmt|clippy|doc)"
+  
+  # Docker - safe operations
+  "^docker\s+(build|run|ps|logs|exec|pull|push|images|inspect)"
 )
 
 # Check if command matches any allowed regex pattern
