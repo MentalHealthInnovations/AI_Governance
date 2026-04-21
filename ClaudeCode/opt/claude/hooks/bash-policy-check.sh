@@ -89,12 +89,6 @@ allowed_patterns=(
   "^ruff\s+(check|format|format.*--check|lint)"
   "^mypy"
   
-  # Go
-  "^go\s+(build|run|test|fmt|get|install|mod|version)"
-  
-  # Rust
-  "^cargo\s+(build|run|test|check|fmt|clippy|doc)"
-  
   # Docker - safe operations
   "^docker\s+(build|run|ps|logs|exec|pull|push|images|inspect)"
 )
