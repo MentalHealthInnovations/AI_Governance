@@ -1,14 +1,35 @@
 {
-  "defaultMode": "auto",
-  "disableBypassPermissionsMode": true,
-  "channelsEnabled": false,
   "allowedChannelPlugins": [],
-
+  "allowedHttpHookUrls": [],
+  "allowedMcpServers": [],
   "allowManagedHooksOnly": true,
-
   "allowManagedMcpServersOnly": true,
+  "allowManagedPermissionRulesOnly": true,
+  "alwaysThinkingEnabled": false, 
+  "channelsEnabled": false,
+  "companyAnnouncements": ["You must read and adhere to the MHI Use of Artificial Intelligence policy at https://mentalhealthinnovations.atlassian.net/wiki/spaces/MPSC/pages/4485349381/MHI+Use+of+Artificial+Intelligence. See technical controls at https://github.com/MentalHealthInnovations/AI_Governance"],
+  "disableAutoMode": "disable",
+  "disableDeepLinkRegistration": "disable",
+  "disableSkillShellExecution": true,
+  "enabledMcpjsonServers": [],
+  "feedbackSurveyRate": 0,
+  "forceLoginMethod": "claudeai",
+  "forceLoginOrgUUID": "# TODO: set org UUID to force users to log in with an org account",
+  "forceRemoteSettingsRefresh": true,
+  "strictKnownMarketplaces": [],
+
+  "autoConnectIde": false,
+  "autoInstallIdeExtension": true,
+  "editorMode": "normal",
+  "externalEditorContext": true,
+  "showTurnDuration": true,
+  "terminalProgressBarEnabled": true,
 
   "permissions": {
+    "additionalDirectories": [],
+    "defaultMode": "dontAsk",
+    "disableBypassPermissionsMode": "disable",
+    "skipDangerousModePermissionPrompt": false,
     "deny": [
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
@@ -109,6 +130,7 @@
     "enabled": true,
     "failIfUnavailable": true,
     "autoAllowBashIfSandboxed": false,
+    "excludedCommands": [],
     "allowUnsandboxedCommands": false,
 
     "filesystem": {
@@ -146,6 +168,10 @@
     },
 
     "network": {
+      "allowUnixSockets": [],
+      "allowAllUnixSockets": false,
+      "allowLocalBinding": false,
+      "allowMachLookup": [],
       "allowedDomains": [
         "github.com",
         "api.github.com",
@@ -162,8 +188,8 @@
         "production.cloudflare.docker.com"
       ],
       "allowManagedDomainsOnly": true,
-      "allowLocalBinding": false,
-      "allowAllUnixSockets": false
+      "enableWeakerNestedSandbox": false,
+      "enableWeakerNetworkIsolation": false
     }
   },
 
