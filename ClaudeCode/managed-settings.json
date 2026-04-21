@@ -59,9 +59,7 @@
       "Edit(./secrets/**)",
 
       "Edit(./.git/**)",
-      "Edit(./.husky/**)",
-
-      "Bash(*)"
+      "Edit(./.husky/**)"
     ]
   },
 
