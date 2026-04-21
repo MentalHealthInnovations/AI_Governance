@@ -61,68 +61,7 @@
       "Edit(./.git/**)",
       "Edit(./.husky/**)",
 
-      "Bash(curl *)",
-      "Bash(wget *)",
-      "Bash(nc *)",
-      "Bash(netcat *)",
-      "Bash(ncat *)",
-      "Bash(socat *)",
-
-      "Bash(sudo *)",
-      "Bash(su *)",
-
-      "Bash(rm -rf *)",
-      "Bash(git push --force*)",
-
-      "Bash(*|bash*)",
-      "Bash(*|sh*)",
-      "Bash(*|zsh*)",
-      "Bash(*|fish*)",
-      "Bash(*| python*)",
-      "Bash(*| node*)",
-      "Bash(eval *)",
-      "Bash(xargs *)"
-    ],
-
-    "ask": [
-      "Bash(git push *)",
-      "Bash(gh pr create*)",
-      "Bash(gh pr merge*)",
-      "Bash(npm install *)",
-      "Bash(pnpm add *)",
-      "Bash(yarn add *)",
-      "Bash(pip install *)",
-      "Bash(poetry add *)",
-      "Bash(go get *)",
-      "Bash(cargo add *)",
-      "Bash(docker build *)",
-      "Bash(docker run *)"
-    ],
-
-    "allow": [
-      "Bash(git status*)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git branch*)",
-      "Bash(git checkout -b *)",
-
-      "Bash(gh pr view*)",
-      "Bash(gh issue view*)",
-      "Bash(gh repo view*)",
-
-      "Bash(npm test*)",
-      "Bash(npm run test*)",
-      "Bash(npm run lint*)",
-      "Bash(npm run typecheck*)",
-
-      "Bash(pnpm test*)",
-      "Bash(pnpm lint*)",
-
-      "Bash(pytest*)",
-      "Bash(ruff check*)",
-      "Bash(mypy*)",
-      "Bash(go test*)",
-      "Bash(cargo test*)"
+      "Bash(*)"
     ]
   },
 
