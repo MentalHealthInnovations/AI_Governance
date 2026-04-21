@@ -1,6 +1,8 @@
 {
   "defaultMode": "auto",
   "disableBypassPermissionsMode": true,
+  "channelsEnabled": false,
+  "allowedChannelPlugins": [],
 
   "allowManagedHooksOnly": true,
 
