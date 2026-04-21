@@ -11,11 +11,9 @@ This control pack provides a layered configuration system for Claude Code, desig
 | `__repo__settings.json` | Example team-wide project defaults (Layer 3) |
 | `settings.local.json` | Example personal project overrides (Layer 4) |
 | `CLAUDE.md` | Project conventions and behavioural guidance for Claude Code |
-| `cc-redact-rules.yaml` | Pattern definitions for the redaction hook |
 | `sandbox.sh` | Environment setup for sandbox mode |
 | `control_mappings.csv` | Mapping of controls to configuration settings |
 | `opt/claude/hooks/bash-policy-check.sh` | Pre-execution policy hook for bash commands |
-| `opt/claude/hooks/cc-redact-wrapper.sh` | Redaction hook for sensitive file reads |
 
 ## Settings hierarchy
 
@@ -111,13 +109,11 @@ MCP servers are locked to a managed allowlist. Only servers defined in `managed-
 
 ## Hooks
 
-Two hooks run as pre-execution checks at the managed level.
+Hooks run as pre-execution checks at the managed level.
 
 **`bash-policy-check.sh`** runs before every bash command. It enforces policy rules that go beyond pattern matching in the deny list — for example, catching obfuscated commands or compound expressions that would bypass simple glob rules. If it exits non-zero, the command is blocked and the developer sees the rejection reason.
 
-**`cc-redact-wrapper.sh`** runs before file reads. It checks the target path against patterns in `cc-redact-rules.yaml` and redacts sensitive values (API keys, tokens, connection strings) before Claude Code sees the content. This allows Claude to work with the structure of `.env` files without exposing secrets.
-
-Both hooks are deployed to `/opt/claude/hooks/` and must be present before Claude Code is used. If a hook is missing or fails, the operation is blocked (`failIfUnavailable: true` in sandbox settings).
+Hooks are deployed to `/opt/claude/hooks/` and must be present before Claude Code is used. If a hook is missing or fails, the operation is blocked (`failIfUnavailable: true` in sandbox settings).
 
 ## Operating model
 

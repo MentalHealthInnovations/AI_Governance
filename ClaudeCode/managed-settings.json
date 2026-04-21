@@ -140,15 +140,6 @@
             "command": "/opt/claude/hooks/bash-policy-check.sh"
           }
         ]
-      },
-      {
-        "matcher": "Read",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/opt/claude/hooks/cc-redact-wrapper.sh"
-          }
-        ]
       }
     ]
   }
