@@ -58,6 +58,7 @@
 
       "Edit(./.git/**)",
       "Edit(./.husky/**)",
+      "Edit(/Library/Application Support/ClaudeCode)",
 
       "WebSearch(*)"
     ]
