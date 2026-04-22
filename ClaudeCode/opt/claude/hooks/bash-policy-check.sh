@@ -54,7 +54,7 @@ allowed_patterns=(
   "awk"
 
   # Git read-only commands
-  # "^git status"
+  "^git status"
   "^git diff"
   "^git log"
   "^git show"
