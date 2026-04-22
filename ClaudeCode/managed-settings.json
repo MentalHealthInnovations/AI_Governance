@@ -58,7 +58,9 @@
       "Edit(./secrets/**)",
 
       "Edit(./.git/**)",
-      "Edit(./.husky/**)"
+      "Edit(./.husky/**)",
+
+      "WebSearch(*)"
     ]
   },
 
