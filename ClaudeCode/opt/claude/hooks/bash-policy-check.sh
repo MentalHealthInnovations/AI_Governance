@@ -1,39 +1,60 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+logtofile() {
+  echo "[$(date)] $1" >> /tmp/hook-debug.log
+}
+
+logtofile "hook fired"
+
 payload="$(cat)"
 cmd="$(printf '%s' "$payload" | jq -r '.tool_input.command // empty')"
 
+logtofile "cmd extracted: $cmd"
+
 if [[ -z "$cmd" ]]; then
+  logtofile "no command found, exiting"
   exit 0
 fi
 
 separators=$(printf '%s' "$cmd" | grep -oE '(\&\&|;|\|\|)' | wc -l | tr -d ' ')
-if [[ "${separators:-0}" -gt 20 ]]; then
-  printf '{"decision":"deny","reason":"Command chaining exceeds policy threshold"}\n'
+if [[ "${separators:-0}" -gt 5 ]]; then
+  logtofile "DENY excessive chaining ($separators separators): $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Command chaining exceeds policy threshold"}}'
   exit 0
 fi
 
-if printf '%s' "$cmd" | grep -Eqi '(\||;|&&).*(curl|wget|nc|netcat|ncat|socat)'; then
-  printf '{"decision":"deny","reason":"Network tool usage blocked by policy"}\n'
+if printf '%s' "$cmd" | grep -Eqi '(curl|wget|nc|netcat|ncat|socat)'; then
+  logtofile "DENY network tool: $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Network tool usage blocked by policy"}}'
   exit 0
 fi
 
-if printf '%s' "$cmd" | grep -Eqi '\|\s*(bash|sh|zsh|fish)\b'; then
-  printf '{"decision":"deny","reason":"Pipe to shell blocked by policy"}\n'
+if printf '%s' "$cmd" | grep -Eqi '(bash|sh|zsh|fish)'; then
+  logtofile "DENY shell: $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Pipe to shell blocked by policy"}}'
   exit 0
 fi
 
-if printf '%s' "$cmd" | grep -Eqi 'base64\s+(-d|--decode).*(\||;|&&).*(bash|sh|zsh|fish)'; then
-  printf '{"decision":"deny","reason":"Decode-and-execute pattern blocked"}\n'
+if printf '%s' "$cmd" | grep -Eqi 'base64\s+(-d|--decode)'; then
+  logtofile "DENY base64 decode: $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Decode-and-execute pattern blocked"}}'
   exit 0
 fi
 
 # Array of allowed command patterns (regex format)
 # Safe git commands: read-only, safe modifications, but blocks dangerous operations
 allowed_patterns=(
+  # basic commands
+  "^ls"
+  "^echo"
+  "^cat"
+  "^tr"
+  "^sed"
+  "^awk"
+
   # Git read-only commands
-  "^git status"
+  # "^git status"
   "^git diff"
   "^git log"
   "^git show"
@@ -96,9 +117,11 @@ allowed_patterns=(
 # Check if command matches any allowed regex pattern
 for pattern in "${allowed_patterns[@]}"; do
   if printf '%s' "$cmd" | grep -Eqi "$pattern"; then
-    printf '{"decision":"allow"}\n'
+    logtofile "ALLOW pattern '$pattern' matched: $cmd"
+    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
     exit 0
   fi
 done
 
-printf '{"decision":"deny","reason":"Command not in policy allowlist"}\n'
+logtofile "DENY not in allowlist: $cmd"
+echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Command not in policy allowlist"}}'
