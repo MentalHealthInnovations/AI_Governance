@@ -124,17 +124,17 @@ allowed_patterns=(
   "^git help"
   
   # GitHub CLI
-  "^gh\s+(issue|pr|repo|gist|secret|label|run|release)"
+  "^gh\s+(issue|pr|repo|gist|secret|label|release)"
   
   # npm/pnpm/yarn - safe operations
-  "^npm\s+(install|ci|run|test|lint|audit|list|search|view|info|outdated)"
-  "^pnpm\s+(install|run|test|lint|audit|list|search|view|outdated)"
-  "^yarn\s+(install|add|run|test|lint|audit|list|info)"
+  "^npm\s+(install|ci|test|lint|audit|list|search|view|info|outdated)"
+  "^pnpm\s+(install|test|lint|audit|list|search|view|outdated)"
+  "^yarn\s+(install|add|test|lint|audit|list|info)"
   
   # Python package managers
   "^pip\s+(install|list|show|search|check)"
   "^pip3\s+(install|list|show|search|check)"
-  "^poetry\s+(install|add|run|show|search|lock|lock.*--no-update|update)"
+  "^poetry\s+(install|add|show|search|lock|lock.*--no-update|update)"
   
   # Python testing and linting
   "^pytest"
@@ -142,7 +142,7 @@ allowed_patterns=(
   "^mypy"
   
   # Docker - safe operations
-  "^docker\s+(build|run|ps|logs|exec|pull|push|images|inspect)"
+  "^docker\s+(build|ps|logs|exec|pull|images|inspect)"
 )
 
 # Check if command matches any allowed regex pattern
