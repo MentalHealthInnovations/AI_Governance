@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# PreToolUse hook for Bash commands. Enforces an allowlist policy: blocks network tools,
+# pipe-to-shell patterns, base64 decode-and-execute, excessive command chaining, and
+# any command not explicitly permitted. Outputs Claude Code hookSpecificOutput JSON.
 set -u
 
 logtofile() {
