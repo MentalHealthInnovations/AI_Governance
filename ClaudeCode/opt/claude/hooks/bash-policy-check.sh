@@ -145,7 +145,7 @@ allowed_patterns=(
   "^mypy"
   
   # Docker - safe operations
-  "^docker\s+(build|ps|logs|exec|pull|images|inspect)"
+  "^docker\s+(build|ps|logs|pull|images|inspect)"
 )
 
 # Check if command matches any allowed regex pattern
