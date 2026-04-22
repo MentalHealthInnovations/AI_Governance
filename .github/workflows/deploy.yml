@@ -1,0 +1,25 @@
+name: Deploy Claude governance via Hexnode
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trigger Hexnode script deployment
+        env:
+          HEXNODE_API_KEY: ${{ secrets.HEXNODE_API_KEY }}
+          HEXNODE_SCRIPT_ID: ${{ secrets.HEXNODE_SCRIPT_ID }}
+          HEXNODE_DOMAIN: ${{ secrets.HEXNODE_DOMAIN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: ${HEXNODE_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{"script_id": "__HEXNODE_SCRIPT_ID__"}' \
+            "https://__HEXNODE_DOMAIN__/api/v1/scripts/run/"
