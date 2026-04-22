@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -u
 
 logtofile() {
   echo "[$(date)] $1" >> /tmp/hook-debug.log
