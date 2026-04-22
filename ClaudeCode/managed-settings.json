@@ -25,14 +25,10 @@
   "showTurnDuration": true,
   "terminalProgressBarEnabled": true,
 
-  "enableWeakerNestedSandbox": false,
-  "enableWeakerNetworkIsolation": false,
-
   "permissions": {
     "additionalDirectories": [],
     "defaultMode": "dontAsk",
     "disableBypassPermissionsMode": "disable",
-    "skipDangerousModePermissionPrompt": false,
     "deny": [
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
@@ -68,7 +64,9 @@
 
   "sandbox": {
     "enabled": true,
-    "failIfUnavailable": true,
+    "enableWeakerNestedSandbox": false,
+    "enableWeakerNetworkIsolation": false,
+    "ignoreViolations": {},
     "autoAllowBashIfSandboxed": false,
     "excludedCommands": [],
     "allowUnsandboxedCommands": false,
