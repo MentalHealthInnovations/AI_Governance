@@ -25,6 +25,9 @@
   "showTurnDuration": true,
   "terminalProgressBarEnabled": true,
 
+  "enableWeakerNestedSandbox": false,
+  "enableWeakerNetworkIsolation": false,
+
   "permissions": {
     "additionalDirectories": [],
     "defaultMode": "dontAsk",
@@ -124,9 +127,7 @@
         "auth.docker.io",
         "production.cloudflare.docker.com"
       ],
-      "allowManagedDomainsOnly": true,
-      "enableWeakerNestedSandbox": false,
-      "enableWeakerNetworkIsolation": false
+      "allowManagedDomainsOnly": true
     }
   },
 
