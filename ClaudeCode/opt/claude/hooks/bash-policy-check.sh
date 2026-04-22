@@ -102,7 +102,6 @@ allowed_patterns=(
   "^git commit(?!.*--no-verify)"
   "^git tag"
   "^git stash"
-  "^git config"
   
   # Git fetch/pull/checkout
   "^git fetch"
