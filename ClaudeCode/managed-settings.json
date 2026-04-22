@@ -111,7 +111,6 @@
       "allowUnixSockets": [],
       "allowAllUnixSockets": false,
       "allowLocalBinding": false,
-      "allowMachLookup": [],
       "allowedDomains": [
         "github.com",
         "api.github.com",
