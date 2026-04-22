@@ -45,13 +45,43 @@ fi
 # Array of allowed command patterns (regex format)
 # Safe git commands: read-only, safe modifications, but blocks dangerous operations
 allowed_patterns=(
-  # basic commands
+  # basic commands - read-only/safe anywhere in pipeline
   "ls"
   "echo"
   "cat"
   "tr"
   "sed"
   "awk"
+  "grep"
+  "head"
+  "tail"
+  "wc"
+  "sort"
+  "uniq"
+  "cut"
+  "paste"
+  "diff"
+  "date"
+  "pwd"
+  "whoami"
+  "uname"
+  "which"
+  "type"
+  "jq"
+  "tee"
+  "printf"
+
+  # basic commands - anchored as these modify filesystem/env
+  "^find"
+  "^mkdir"
+  "^cp"
+  "^mv"
+  "^touch"
+  "^chmod"
+  "^chown"
+  "^env"
+  "^export"
+  "^xargs"
 
   # Git read-only commands
   "^git status"
