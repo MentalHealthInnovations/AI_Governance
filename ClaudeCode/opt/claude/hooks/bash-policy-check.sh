@@ -80,8 +80,6 @@ allowed_patterns=(
   "^cp"
   "^mv"
   "^touch"
-  "^chmod"
-  "^chown"
   "^env"
   "^export"
   "^xargs"
