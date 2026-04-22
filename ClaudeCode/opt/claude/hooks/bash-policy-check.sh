@@ -33,9 +33,14 @@ if printf '%s' "$cmd" | grep -Eqi '(curl|wget|nc|netcat|ncat|socat)'; then
   exit 0
 fi
 
-if printf '%s' "$cmd" | grep -Eqi '(bash|sh|zsh|fish)'; then
-  logtofile "DENY shell: $cmd"
-  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Pipe to shell blocked by policy"}}'
+# Match shell/interpreter invocation as a command token, not as a substring.
+# Anchors: start of string, after pipe (|), after semicolon, after &&/||, or after backtick.
+# Catches: sh, bash, zsh, fish, dash, ksh, csh, tcsh, python, python3, perl, ruby, node,
+#          nodejs, php, lua, exec. The \b word-boundary prevents matching branch names like
+#          "fish-fix" or arguments that contain these strings.
+if printf '%s' "$cmd" | grep -Eqi '(^|[|;&`$( ])(sh|bash|zsh|fish|dash|ksh|csh|tcsh|python3?|perl|ruby|node(js)?|php|lua|exec)\b'; then
+  logtofile "DENY shell invocation: $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Shell or interpreter invocation blocked by policy"}}'
   exit 0
 fi
 
