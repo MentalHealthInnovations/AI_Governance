@@ -36,6 +36,9 @@ git clone --quiet https://github.com/MentalHealthInnovations/AI_Governance "$ai_
 echo "Copying managed-settings.json..."
 cp "$ai_governance_repo_dir/ClaudeCode/managed-settings.json" "$claude_config_dir"
 
+echo "Copying CLAUDE.md..."
+cp "$ai_governance_repo_dir/ClaudeCode/CLAUDE.md" "$claude_config_dir"
+
 echo "Copying hooks..."
 cp "$ai_governance_repo_dir"/ClaudeCode/opt/claude/hooks/* "$claude_hooks_dir"
 
