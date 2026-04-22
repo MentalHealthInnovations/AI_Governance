@@ -21,7 +21,7 @@ if [[ -z "$cmd" ]]; then
 fi
 
 separators=$(printf '%s' "$cmd" | grep -oE '(\&\&|;|\|\|)' | wc -l | tr -d ' ')
-if [[ "${separators:-0}" -gt 5 ]]; then
+if [[ "${separators:-0}" -gt 2 ]]; then
   logtofile "DENY excessive chaining ($separators separators): $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Command chaining exceeds policy threshold"}}'
   exit 0
