@@ -124,7 +124,10 @@
         "index.crates.io",
         "registry-1.docker.io",
         "auth.docker.io",
-        "production.cloudflare.docker.com"
+        "production.cloudflare.docker.com",
+        "mentalhealthinnovations.org",
+        "themix.org.uk",
+        "giveusashout.org"
       ],
       "allowManagedDomainsOnly": true
     }
