@@ -14,7 +14,6 @@
   "enabledMcpjsonServers": [],
   "feedbackSurveyRate": 0,
   "forceLoginMethod": "claudeai",
-  "forceLoginOrgUUID": "# TODO: set org UUID to force users to log in with an org account",
   "forceRemoteSettingsRefresh": true,
   "strictKnownMarketplaces": [],
 
