@@ -127,7 +127,7 @@ allowed_patterns=(
   "^git help"
   
   # GitHub CLI
-  "^gh\s+(issue|pr|repo|gist|secret|label|release)"
+  "^gh\s+(issue|pr|repo|gist|label|release)"
   
   # npm/pnpm/yarn - safe operations
   "^npm\s+(ci|test|lint|audit|list|search|view|info|outdated)"
