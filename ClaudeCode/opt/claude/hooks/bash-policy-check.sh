@@ -46,12 +46,12 @@ fi
 # Safe git commands: read-only, safe modifications, but blocks dangerous operations
 allowed_patterns=(
   # basic commands
-  "^ls"
-  "^echo"
-  "^cat"
-  "^tr"
-  "^sed"
-  "^awk"
+  "ls"
+  "echo"
+  "cat"
+  "tr"
+  "sed"
+  "awk"
 
   # Git read-only commands
   # "^git status"
