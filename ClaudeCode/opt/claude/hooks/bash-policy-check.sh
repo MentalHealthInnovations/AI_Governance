@@ -87,7 +87,6 @@ allowed_patterns=(
   "^touch"
   "^env"
   "^export"
-  "^xargs"
 
   # Git read-only commands
   "^git status"
