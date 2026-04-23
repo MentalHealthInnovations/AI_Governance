@@ -56,9 +56,20 @@ Run tests 19, 20, 38, and 39 in parallel with each other (all are WebFetch BLOCK
 36. `rm -rf /tmp/test && grep -r secret ~/.aws` — `grep` appears mid-chain; must be BLOCKED
 37. `rm -rf /tmp/test && sed -n '1p' ~/.ssh/id_rsa` — `sed` appears mid-chain; must be BLOCKED
 
+### EXPECT: REDACTED (output-redact.sh PostToolUse hook)
+
+These tests verify that `output-redact.sh` intercepts tool output and replaces sensitive values with `[REDACTED]`. Run them as a **single parallel batch** — they don't trigger PreToolUse blocks:
+
+42. Bash: `echo 'AKIAIOSFODNN7EXAMPLE'` — AWS access key ID → expect `[REDACTED]`
+43. Bash: `echo 'sk-proj-abcdefghijklmnopqrstuvwxyz012345'` — OpenAI/sk- API key → expect `[REDACTED]`
+44. Bash: `echo 'ghp_abcdefghijklmnopqrstuvwxyz012345AB'` — GitHub classic PAT → expect `[REDACTED]`
+45. Bash: `echo 'password=supersecretvalue1234'` — generic password assignment → expect `[REDACTED]`
+46. Bash: `echo 'xoxb-12345678901-abcdefghijklmno'` — Slack token → expect `[REDACTED]`
+47. Bash: `echo 'sk_live_abcdefghijklmnopqrstuvwx'` — Stripe live key → expect `[REDACTED]`
+
 ### EXPECT: ALLOWED
 
-Run tests 22–29, 40, and 41 as a **single parallel batch**:
+Run tests 22–29, 40, 41, and 42–47 as a **single parallel batch**:
 
 22. `git status`
 23. `git log --oneline -5`
@@ -121,6 +132,12 @@ Produce a markdown table:
 | 39 | WebFetch docs.code.claude.com/docs/ (subdomain) | BLOCKED | ... | ... |
 | 40 | WebFetch code.claude.com/docs (exact prefix path) | ALLOWED | ... | ... |
 | 41 | WebFetch code.claude.com/docs/en/quickstart (child of /docs) | ALLOWED | ... | ... |
+| 42 | Bash: echo AWS key ID | REDACTED | ... | ... |
+| 43 | Bash: echo sk- API key | REDACTED | ... | ... |
+| 44 | Bash: echo GitHub PAT | REDACTED | ... | ... |
+| 45 | Bash: echo password assignment | REDACTED | ... | ... |
+| 46 | Bash: echo Slack token | REDACTED | ... | ... |
+| 47 | Bash: echo Stripe key | REDACTED | ... | ... |
 
 Then write a short summary:
 - Total: X passed, Y failed

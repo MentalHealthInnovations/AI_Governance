@@ -14,6 +14,7 @@ This control pack provides a layered configuration system for Claude Code, desig
 | `ClaudeCode/control_mappings.csv` | Mapping of controls to ISO 42001 / NIST AI RMF |
 | `ClaudeCode/opt/claude/hooks/bash-policy-check.sh` | Pre-execution policy hook for bash commands |
 | `ClaudeCode/opt/claude/hooks/webfetch-policy-check.sh` | Pre-execution policy hook for WebFetch calls |
+| `ClaudeCode/opt/claude/hooks/output-redact.sh` | Post-execution output redaction hook for Bash, Read, and WebFetch |
 | `ClaudeCode/InstallClaudeGovernance.sh` | Installation script for macOS |
 
 ## Installation
@@ -120,6 +121,8 @@ Hooks run as pre-execution checks at the managed level.
 **`bash-policy-check.sh`** runs before every bash command. It enforces policy rules that go beyond pattern matching in the deny list — for example, catching obfuscated commands or compound expressions that would bypass simple glob rules. If it exits non-zero, the command is blocked and the developer sees the rejection reason.
 
 **`webfetch-policy-check.sh`** runs before every WebFetch call. It enforces an allowlist of approved domains, blocking requests to any domain not explicitly permitted in `managed-settings.json`.
+
+**`output-redact.sh`** runs after every Bash, Read, and WebFetch call. It scans the tool output for API keys, credentials, and other sensitive values, replacing matches with `[REDACTED]` before the content reaches Claude's context window. Each redaction is logged (pattern name and first six characters of the match) for audit purposes — the full value is never written to the log. Patterns covered include: PEM blocks, AWS access key IDs and secret keys, GitHub PATs (classic and fine-grained), OpenAI/Anthropic `sk-` keys, Slack tokens, JWTs, Bearer headers, generic `key=value` / `password=value` env assignments, and Stripe/Twilio/SendGrid vendor keys.
 
 Hooks are deployed to `/opt/claude/hooks/` by the install script and must be present before Claude Code is used. If a hook is missing or fails, the operation is blocked (`failIfUnavailable: true` in sandbox settings).
 
