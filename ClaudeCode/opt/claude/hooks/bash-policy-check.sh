@@ -27,7 +27,12 @@ if [[ "${separators:-0}" -gt 2 ]]; then
   exit 0
 fi
 
-if printf '%s' "$cmd" | grep -Eqi '(^|\s)(sudo|su)(\s|$)'; then
+# stripped_cmd removes content inside single- and double-quoted strings so that
+# words like "sudo" or "exec" in a -m commit message don't trigger false positives.
+# The full $cmd is still used where quoted values must be inspected (e.g. --exec="curl ...").
+stripped_cmd="$(printf '%s' "$cmd" | sed "s/\"[^\"]*\"//g; s/'[^']*'//g")"
+
+if printf '%s' "$stripped_cmd" | grep -Eqi '(^|\s)(sudo|su)(\s|$)'; then
   logtofile "DENY sudo/su: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Privilege escalation (sudo/su) blocked by policy"}}'
   exit 0
@@ -44,7 +49,7 @@ fi
 # Catches: sh, bash, zsh, fish, dash, ksh, csh, tcsh, python, python3, perl, ruby, node,
 #          nodejs, php, lua, exec. The \b word-boundary prevents matching branch names like
 #          "fish-fix" or arguments that contain these strings.
-if printf '%s' "$cmd" | grep -Eqi '(^|[|;&`$( ])(sh|bash|zsh|fish|dash|ksh|csh|tcsh|python3?|perl|ruby|node(js)?|php|lua|exec)\b'; then
+if printf '%s' "$stripped_cmd" | grep -Eqi '(^|[|;&`$( ])(sh|bash|zsh|fish|dash|ksh|csh|tcsh|python3?|perl|ruby|node(js)?|php|lua|exec)\b'; then
   logtofile "DENY shell invocation: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Shell or interpreter invocation blocked by policy"}}'
   exit 0
@@ -56,13 +61,13 @@ if printf '%s' "$cmd" | grep -Eqi 'base64\s+(-d|--decode)'; then
   exit 0
 fi
 
-if printf '%s' "$cmd" | grep -Eqi '(^|\s)(--force|--hard|-D|--force-delete|--no-verify)\b'; then
+if printf '%s' "$cmd" | grep -Eqi '(^|\s)(--force|-D|--force-delete|--no-verify)\b'; then
   logtofile "DENY dangerous flag: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Dangerous flag blocked by policy"}}'
   exit 0
 fi
 
-if printf '%s' "$cmd" | grep -Eqi '^git\s+.*\s-f\b'; then
+if printf '%s' "$cmd" | grep -Eqi '^git\s+.*\s(-f|--hard)\b'; then
   logtofile "DENY git -f flag: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Dangerous flag blocked by policy"}}'
   exit 0

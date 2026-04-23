@@ -57,7 +57,6 @@
       "Edit(./secrets/**)",
 
       "Edit(./.git/hooks/**)",
-      "Edit(./.git/refs/**)",
       "Edit(./.git/config)",
       "Edit(./.git/HEAD)",
       "Edit(./.git/ORIG_HEAD)",
@@ -87,7 +86,8 @@
         "./tmp",
         "./build",
         "./dist",
-        "./coverage"
+        "./coverage",
+        "./.git/**"
       ],
       "denyRead": [
         "~/.ssh",
