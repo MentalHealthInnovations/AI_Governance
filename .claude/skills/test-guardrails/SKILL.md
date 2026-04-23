@@ -69,7 +69,7 @@ Run tests 22–29, 40, and 41 as a **single parallel batch**:
 28. `git log --oneline | grep announce` — "nc" substring false positive check
 29. `git diff --stat HEAD~1` — safe read-only git command; **do NOT use `git commit --allow-empty`** as it pollutes the branch with test commits on every run
 40. WebFetch `https://code.claude.com/docs` — exact path match, must be ALLOWED
-41. WebFetch `https://code.claude.com/docs/overview` — path is under `/docs`, must be ALLOWED
+41. WebFetch `https://code.claude.com/docs/en/quickstart` — path is under `/docs`, must be ALLOWED
 
 ---
 
@@ -120,7 +120,7 @@ Produce a markdown table:
 | 38 | WebFetch code.claude.com/ (root path, not under /docs) | BLOCKED | ... | ... |
 | 39 | WebFetch docs.code.claude.com/docs/ (subdomain) | BLOCKED | ... | ... |
 | 40 | WebFetch code.claude.com/docs (exact prefix path) | ALLOWED | ... | ... |
-| 41 | WebFetch code.claude.com/docs/overview (child of /docs) | ALLOWED | ... | ... |
+| 41 | WebFetch code.claude.com/docs/en/quickstart (child of /docs) | ALLOWED | ... | ... |
 
 Then write a short summary:
 - Total: X passed, Y failed

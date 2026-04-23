@@ -54,7 +54,8 @@ allowed_entries=(
   "code.claude.com/docs"
 )
 
-path="$(printf '%s' "$url" | sed -E 's|^[^:]+://[^/]*(/.*)$|\1|; t; s|.*|/|')"
+path="$(printf '%s' "$url" | sed -E 's|^[^:]+://[^/]*(/.*)$|\1|')"
+path="${path:-/}"
 
 for entry in "${allowed_entries[@]}"; do
   entry_host="${entry%%/*}"
@@ -78,3 +79,4 @@ done
 
 logtofile "DENY domain not in allowlist: $url"
 echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Domain not in WebFetch allowlist"}}'
+exit 0
