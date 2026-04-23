@@ -19,11 +19,16 @@ if [[ -z "$url" ]]; then
   exit 0
 fi
 
-# Extract hostname from URL (strip scheme, path, port, query)
-hostname="$(printf '%s' "$url" | sed -E 's|^[^:]+://([^/:?#]*).*|\1|')"
+# Extract hostname from URL (strip scheme, path, port, query).
+# Assumes well-formed absolute URLs with a scheme (e.g. https://host/path).
+# Schemeless URLs (//host/path) or credential-embedded URLs (user:pass@host)
+# won't parse correctly, but the WebFetch tool always provides absolute https URLs.
+hostname="$(printf '%s' "$url" | sed -E 's|^[^:]+://([^/:?#@]*).*|\1|; s|^[^@]*@||')"
 
 logtofile "hostname extracted: $hostname"
 
+# This list must be kept in sync with network.allowedDomains in managed-settings.json.
+# When adding a domain here, add it there too (and vice versa).
 allowed_domains=(
   "github.com"
   "api.github.com"

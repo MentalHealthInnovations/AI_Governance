@@ -102,14 +102,17 @@ allowed_patterns=(
   "\btee\b"
   "\bprintf\b"
 
-  # basic commands - anchored as these modify filesystem/env
-  "^find"
-  "^mkdir"
-  "^cp"
-  "^mv"
-  "^touch"
-  "^env"
-  "^export"
+  # basic commands - anchored because they modify filesystem/env.
+  # Not matched as bare \bword\b tokens because they must be the leading command,
+  # not a segment after && in a chain (chaining threshold already limits this, but
+  # anchoring here adds a second constraint for single-command uses).
+  "^find\b"
+  "^mkdir\b"
+  "^cp\b"
+  "^mv\b"
+  "^touch\b"
+  "^env\b"
+  "^export\b"
 
   # Git read-only commands
   "^git status"
@@ -130,11 +133,11 @@ allowed_patterns=(
   "^git checkout"
   "^git branch"
   "^git merge"
-  "^git rebase"
+  "^git rebase"   # --onto and non-hard rebases are allowed; --hard is caught above
   "^git push"
   "^git rm"
   "^git mv"
-  "^git reset"
+  "^git reset"    # non-destructive modes (--soft, HEAD~N) allowed; --hard caught above
   "^git clone"
   "^git help"
   
