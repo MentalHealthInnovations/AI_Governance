@@ -108,6 +108,10 @@ GitHub is allowed through constrained workflows, not as a blanket trust assumpti
 
 MCP servers are locked to a managed allowlist. Only servers defined in `managed-settings.json` can be used. To request a new MCP server, submit a change to the managed settings through the security/platform team — the process is the same as requesting a new approved domain.
 
+### Skills
+
+`disableSkillShellExecution: true` prevents skill scripts from executing shell commands directly. Skills can still invoke tools through the normal Claude Code tool-use pathway, where hooks and sandbox rules apply. This setting closes a bypass route where a skill's embedded shell script could run without going through the `bash-policy-check.sh` hook.
+
 ## Hooks
 
 Hooks run as pre-execution checks at the managed level.

@@ -5,7 +5,7 @@
 set -u
 
 logtofile() {
-  echo "[$(date)] $1" >> /tmp/hook-debug.log
+  echo "[$(date)] $1" >> "$HOME/.claude/debug/hook.log"
 }
 
 logtofile "hook fired"
@@ -163,14 +163,29 @@ allowed_patterns=(
   "^docker\s+(build|ps|logs|pull|images|inspect)"
 )
 
-# Check if command matches any allowed regex pattern
-for pattern in "${allowed_patterns[@]}"; do
-  if printf '%s' "$cmd" | grep -Eqi "$pattern"; then
-    logtofile "ALLOW pattern '$pattern' matched: $cmd"
-    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
+# Split command on chain operators (&&, ||, ;, |) and check each segment individually.
+# This prevents allowlisted tokens mid-chain from laundering a blocked lead command,
+# e.g. "rm -rf /tmp && cat file" must not pass just because \bcat\b is in the allowlist.
+segment_allowed() {
+  local seg
+  seg="$(printf '%s' "$1" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')"
+  [[ -z "$seg" ]] && return 0  # empty segment (e.g. trailing operator) is fine
+  for pattern in "${allowed_patterns[@]}"; do
+    if printf '%s' "$seg" | grep -Eqi "$pattern"; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Split on &&, ||, ;, | (all chain operators) using sed to normalise to newlines
+while IFS= read -r segment; do
+  if ! segment_allowed "$segment"; then
+    logtofile "DENY segment not in allowlist: '$segment' (full cmd: $cmd)"
+    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Command not in policy allowlist"}}'
     exit 0
   fi
-done
+done < <(printf '%s' "$cmd" | sed 's/&&/\n/g; s/||/\n/g; s/;/\n/g; s/|/\n/g')
 
-logtofile "DENY not in allowlist: $cmd"
-echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Command not in policy allowlist"}}'
+logtofile "ALLOW all segments matched: $cmd"
+echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'

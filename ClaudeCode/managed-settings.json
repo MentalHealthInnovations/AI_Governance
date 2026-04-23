@@ -114,7 +114,17 @@
         "/etc",
         "/usr/local/bin",
         "~/.ssh",
-        "~/.gnupg"
+        "~/.aws",
+        "~/.azure",
+        "~/.config/gcloud",
+        "~/.gnupg",
+        "~/.npmrc",
+        "~/.netrc",
+        "~/.docker",
+        "~/.kube",
+        "~/.terraform.d",
+        "~/.vault-token",
+        "~/Library/Keychains"
       ],
       "allowManagedReadPathsOnly": true
     },

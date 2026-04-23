@@ -4,7 +4,7 @@
 set -u
 
 logtofile() {
-  echo "[$(date)] $1" >> /tmp/hook-debug.log
+  echo "[$(date)] $1" >> "$HOME/.claude/debug/hook.log"
 }
 
 logtofile "webfetch hook fired"
