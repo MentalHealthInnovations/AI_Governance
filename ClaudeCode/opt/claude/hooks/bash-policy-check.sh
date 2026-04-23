@@ -27,10 +27,30 @@ if [[ "${separators:-0}" -gt 2 ]]; then
   exit 0
 fi
 
-# stripped_cmd removes content inside single- and double-quoted strings so that
-# words like "sudo" or "exec" in a -m commit message don't trigger false positives.
+# strip_quoted_strings removes everything inside "..." or '...' (including multi-line values)
+# so that words like "exec" in a commit message body don't trigger false positives.
 # The full $cmd is still used where quoted values must be inspected (e.g. --exec="curl ...").
-stripped_cmd="$(printf '%s' "$cmd" | sed "s/\"[^\"]*\"//g; s/'[^']*'//g")"
+strip_quoted_strings() {
+  local full_command="$1"
+  local result="" current_char="" open_quote=""
+  local position=0
+  while [[ $position -lt ${#full_command} ]]; do
+    current_char="${full_command:$position:1}"
+    if [[ -n "$open_quote" ]]; then
+      # Inside a quoted string — skip until the matching closing quote
+      [[ "$current_char" == "$open_quote" ]] && open_quote=""
+    else
+      if [[ "$current_char" == '"' || "$current_char" == "'" ]]; then
+        open_quote="$current_char"   # entering a quoted string
+      else
+        result+="$current_char"     # outside any quotes — keep this character
+      fi
+    fi
+    (( position++ ))
+  done
+  printf '%s' "$result"
+}
+stripped_cmd="$(strip_quoted_strings "$cmd")"
 
 if printf '%s' "$stripped_cmd" | grep -Eqi '(^|\s)(sudo|su)(\s|$)'; then
   logtofile "DENY sudo/su: $cmd"
@@ -67,7 +87,7 @@ if printf '%s' "$cmd" | grep -Eqi '(^|\s)(--force|-D|--force-delete|--no-verify)
   exit 0
 fi
 
-if printf '%s' "$cmd" | grep -Eqi '^git\s+.*\s(-f|--hard)\b'; then
+if printf '%s' "$cmd" | grep -Eq '^git\s+.*\s(-f|--hard)\b'; then
   logtofile "DENY git -f flag: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Dangerous flag blocked by policy"}}'
   exit 0
