@@ -20,14 +20,20 @@ if [[ -z "$cmd" ]]; then
   exit 0
 fi
 
-separators=$(printf '%s' "$cmd" | grep -oE '(\&\&|;|\|\|)' | wc -l | tr -d ' ')
+separators=$(printf '%s' "$cmd" | grep -oE '(\&\&|;|\|\||\|)' | wc -l | tr -d ' ')
 if [[ "${separators:-0}" -gt 2 ]]; then
   logtofile "DENY excessive chaining ($separators separators): $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Command chaining exceeds policy threshold"}}'
   exit 0
 fi
 
-if printf '%s' "$cmd" | grep -Eqi '(curl|wget|nc|netcat|ncat|socat)'; then
+if printf '%s' "$cmd" | grep -Eqi '(^|\s)(sudo|su)(\s|$)'; then
+  logtofile "DENY sudo/su: $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Privilege escalation (sudo/su) blocked by policy"}}'
+  exit 0
+fi
+
+if printf '%s' "$cmd" | grep -Eqi '\b(curl|wget|nc|netcat|ncat|socat)\b'; then
   logtofile "DENY network tool: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Network tool usage blocked by policy"}}'
   exit 0
@@ -50,34 +56,46 @@ if printf '%s' "$cmd" | grep -Eqi 'base64\s+(-d|--decode)'; then
   exit 0
 fi
 
+if printf '%s' "$cmd" | grep -Eqi '(^|\s)(--force|--hard|-D|--force-delete|--no-verify)\b'; then
+  logtofile "DENY dangerous flag: $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Dangerous flag blocked by policy"}}'
+  exit 0
+fi
+
+if printf '%s' "$cmd" | grep -Eqi '^git\s+.*\s-f\b'; then
+  logtofile "DENY git -f flag: $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Dangerous flag blocked by policy"}}'
+  exit 0
+fi
+
 # Array of allowed command patterns (regex format)
 # Safe git commands: read-only, safe modifications, but blocks dangerous operations
 allowed_patterns=(
   # basic commands - read-only/safe anywhere in pipeline
-  "ls"
-  "echo"
-  "cat"
-  "tr"
-  "sed"
-  "awk"
-  "grep"
-  "head"
-  "tail"
-  "wc"
-  "sort"
-  "uniq"
-  "cut"
-  "paste"
-  "diff"
-  "date"
-  "pwd"
-  "whoami"
-  "uname"
-  "which"
-  "type"
-  "jq"
-  "tee"
-  "printf"
+  "\bls\b"
+  "\becho\b"
+  "\bcat\b"
+  "\btr\b"
+  "\bsed\b"
+  "\bawk\b"
+  "\bgrep\b"
+  "\bhead\b"
+  "\btail\b"
+  "\bwc\b"
+  "\bsort\b"
+  "\buniq\b"
+  "\bcut\b"
+  "\bpaste\b"
+  "\bdiff\b"
+  "\bdate\b"
+  "\bpwd\b"
+  "\bwhoami\b"
+  "\buname\b"
+  "\bwhich\b"
+  "\btype\b"
+  "\bjq\b"
+  "\btee\b"
+  "\bprintf\b"
 
   # basic commands - anchored as these modify filesystem/env
   "^find"
@@ -99,30 +117,19 @@ allowed_patterns=(
   
   # Git safe modifications
   "^git add"
-  "^git commit(?!.*--no-verify)"
+  "^git commit"
   "^git tag"
   "^git stash"
-  
-  # Git fetch/pull/checkout
   "^git fetch"
-  "^git pull(?!.*--force)(?!.*\s-f\b)"
+  "^git pull"
   "^git checkout"
-  
-  # Git branch/merge (safe operations)
-  "^git branch(?!.*-D)(?!.*--force-delete)"
-  "^git merge(?!.*--no-verify)(?!.*\s--no-ff)"
-  "^git rebase(?!.*--force)(?!.*\s-f\b)"
-  
-  # Git push (without --force)
-  "^git push(?!.*--force)(?!.*\s-f\b)"
-  
-  # Git file operations
+  "^git branch"
+  "^git merge"
+  "^git rebase"
+  "^git push"
   "^git rm"
   "^git mv"
-  "^git reset(?!.*--hard)"
-  "^git clean(?!.*-f)(?!.*-d)(?!.*-x)"
-  
-  # Other safe commands
+  "^git reset"
   "^git clone"
   "^git help"
   

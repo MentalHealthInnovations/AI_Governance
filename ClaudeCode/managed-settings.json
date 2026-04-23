@@ -56,7 +56,12 @@
       "Edit(./**/.env.*)",
       "Edit(./secrets/**)",
 
-      "Edit(./.git/**)",
+      "Edit(./.git/hooks/**)",
+      "Edit(./.git/refs/**)",
+      "Edit(./.git/config)",
+      "Edit(./.git/HEAD)",
+      "Edit(./.git/ORIG_HEAD)",
+      "Edit(./.git/packed-refs)",
       "Edit(./.husky/**)",
       "Edit(/Library/Application Support/ClaudeCode)",
 
@@ -141,6 +146,15 @@
           {
             "type": "command",
             "command": "/opt/claude/hooks/bash-policy-check.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/claude/hooks/webfetch-policy-check.sh"
           }
         ]
       }
