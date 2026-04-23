@@ -142,8 +142,8 @@ allowed_patterns=(
   "^gh\s+(issue|pr|repo|gist|label|release)"
   
   # npm/pnpm/yarn - safe operations
-  "^npm\s+(ci|test|lint|audit|list|search|view|info|outdated)"
-  "^pnpm\s+(test|lint|audit|list|search|view|outdated)"
+  "^npm\s+(ci|test|lint|list|search|view|info|outdated)"
+  "^pnpm\s+(test|lint|list|search|view|outdated)"
   "^yarn\s+(test|lint|audit|list|info)"
   
   # Python package managers
