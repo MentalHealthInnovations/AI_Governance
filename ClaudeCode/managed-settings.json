@@ -87,7 +87,14 @@
         "./build",
         "./dist",
         "./coverage",
-        "./.git/**"
+        "./.git/refs/**",
+        "./.git/objects/**",
+        "./.git/logs/**",
+        "./.git/COMMIT_EDITMSG",
+        "./.git/MERGE_MSG",
+        "./.git/MERGE_HEAD",
+        "./.git/index",
+        "./.git/FETCH_HEAD"
       ],
       "denyRead": [
         "~/.ssh",
