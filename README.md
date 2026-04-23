@@ -13,6 +13,7 @@ This control pack provides a layered configuration system for Claude Code, desig
 | `ClaudeCode/settings.local.json` | Example personal project overrides (Layer 4) |
 | `ClaudeCode/control_mappings.csv` | Mapping of controls to ISO 42001 / NIST AI RMF |
 | `ClaudeCode/opt/claude/hooks/bash-policy-check.sh` | Pre-execution policy hook for bash commands |
+| `ClaudeCode/opt/claude/hooks/webfetch-policy-check.sh` | Pre-execution policy hook for WebFetch calls |
 | `ClaudeCode/InstallClaudeGovernance.sh` | Installation script for macOS |
 
 ## Installation
@@ -117,6 +118,8 @@ MCP servers are locked to a managed allowlist. Only servers defined in `managed-
 Hooks run as pre-execution checks at the managed level.
 
 **`bash-policy-check.sh`** runs before every bash command. It enforces policy rules that go beyond pattern matching in the deny list — for example, catching obfuscated commands or compound expressions that would bypass simple glob rules. If it exits non-zero, the command is blocked and the developer sees the rejection reason.
+
+**`webfetch-policy-check.sh`** runs before every WebFetch call. It enforces an allowlist of approved domains, blocking requests to any domain not explicitly permitted in `managed-settings.json`.
 
 Hooks are deployed to `/opt/claude/hooks/` by the install script and must be present before Claude Code is used. If a hook is missing or fails, the operation is blocked (`failIfUnavailable: true` in sandbox settings).
 
