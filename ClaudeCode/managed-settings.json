@@ -183,7 +183,8 @@
         "production.cloudflare.docker.com",
         "mentalhealthinnovations.org",
         "themix.org.uk",
-        "giveusashout.org"
+        "giveusashout.org",
+        "code.claude.com"
       ],
       "allowManagedDomainsOnly": true
     }

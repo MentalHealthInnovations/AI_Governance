@@ -27,9 +27,14 @@ hostname="$(printf '%s' "$url" | sed -E 's|^[^:]+://([^/:?#@]*).*|\1|; s|^[^@]*@
 
 logtofile "hostname extracted: $hostname"
 
-# This list must be kept in sync with network.allowedDomains in managed-settings.json.
-# When adding a domain here, add it there too (and vice versa).
-allowed_domains=(
+# Unified allowlist. Each entry is either:
+#   "example.com"        — allows requests to exactly example.com, any path
+#   "example.com/path"   — allows requests to exactly example.com under /path/* only
+#
+# No wildcard subdomain matching — subdomains must be listed explicitly.
+# Must be kept in sync with network.allowedDomains in managed-settings.json
+# (which only supports bare hostnames — add just the host part there).
+allowed_entries=(
   "github.com"
   "api.github.com"
   "objects.githubusercontent.com"
@@ -46,12 +51,27 @@ allowed_domains=(
   "mentalhealthinnovations.org"
   "themix.org.uk"
   "giveusashout.org"
+  "code.claude.com/docs"
 )
 
-for domain in "${allowed_domains[@]}"; do
-  if [[ "$hostname" == "$domain" || "$hostname" == *."$domain" ]]; then
-    logtofile "ALLOW domain '$domain' matched: $url"
-    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
+path="$(printf '%s' "$url" | sed -E 's|^[^:]+://[^/]*(/.*)$|\1|; t; s|.*|/|')"
+
+for entry in "${allowed_entries[@]}"; do
+  entry_host="${entry%%/*}"
+  if [[ "$entry" == */* ]]; then
+    entry_path="/${entry#*/}"
+  else
+    entry_path=""
+  fi
+
+  if [[ "$hostname" == "$entry_host" ]]; then
+    if [[ -z "$entry_path" || "$path" == "$entry_path" || "$path" == "$entry_path/"* ]]; then
+      logtofile "ALLOW entry '$entry' matched: $url"
+      echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
+      exit 0
+    fi
+    logtofile "DENY host '$entry_host' matched but path '$path' not under '$entry_path': $url"
+    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Domain not in WebFetch allowlist"}}'
     exit 0
   fi
 done
