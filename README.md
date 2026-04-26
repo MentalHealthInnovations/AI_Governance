@@ -16,6 +16,8 @@ This control pack provides a layered configuration system for Claude Code, desig
 | `ClaudeCode/opt/claude/hooks/webfetch-policy-check.sh` | Pre-execution policy hook for WebFetch calls |
 | `ClaudeCode/opt/claude/hooks/output-redact.sh` | Post-execution output redaction hook for Bash, Read, and WebFetch |
 | `ClaudeCode/InstallClaudeGovernance.sh` | Installation script for macOS |
+| `docs/staff-brief.md` | Non-technical overview for staff receiving Claude Code |
+| `docs/exception-process.md` | How to request policy changes or exceptions |
 
 ## Installation
 
@@ -134,6 +136,43 @@ Use approval and denial telemetry to tune the middle layer over time:
 - Promote repetitive safe asks into allow.
 - Keep hard deny rules small, stable, and explicit.
 - Avoid creating so many prompts that users stop reading them carefully.
+
+## Monitoring and alerting
+
+### Hook audit logs
+
+Each hook writes to a local log file when it blocks or allows an operation:
+
+| Hook | Log path |
+|---|---|
+| `bash-policy-check.sh` | `~/.claude/debug/bash-policy.log` |
+| `webfetch-policy-check.sh` | `~/.claude/debug/webfetch-policy.log` |
+| `output-redact.sh` | `~/.claude/debug/output-redact.log` |
+
+Only deny and redact events are logged — allowed operations produce no log entry. The `output-redact` log records the pattern name and the first six characters of the matched value — never the full secret.
+
+### What to review
+
+Review hook logs periodically to identify:
+
+- **Repeated blocks on the same command** — may indicate a legitimate use case that the allowlist should cover, or a user attempting to work around a control
+- **Unexpected `output-redact` hits** — secrets appearing in file reads or command output may indicate a project is storing credentials in a way that needs fixing
+- **WebFetch blocks** — repeated attempts to reach unapproved domains may indicate a dependency on a service not yet allowlisted
+
+### Fleet-wide log collection
+
+Hook logs are local by default. To aggregate them centrally, configure your endpoint management tooling (e.g. Jamf, osquery, a log forwarder) to ship `~/.claude/debug/bash-policy.log`, `~/.claude/debug/webfetch-policy.log`, and `~/.claude/debug/output-redact.log` to your SIEM or log platform of choice. The files are append-only and safe to tail or rotate.
+
+Until centralised collection is in place, logs must be reviewed on a per-machine basis — for example, as part of a periodic compliance check or in response to a reported incident.
+
+### Incident response
+
+If you suspect a guardrail bypass:
+
+1. Review the local hook logs on the affected machine for anomalous patterns.
+2. Check git history for any recent changes to the managed settings or hook scripts — these require two-person approval and should match what is in `main`.
+3. Verify installed hooks match the repository: `shasum -a 256 /opt/claude/hooks/*.sh` and compare against `shasum -a 256 ClaudeCode/opt/claude/hooks/*.sh` in the repo.
+4. If there is evidence of tampering, treat it as a security incident and follow MHI's standard incident response procedure.
 
 ## Deployment
 
