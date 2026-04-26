@@ -93,6 +93,16 @@ if printf '%s' "$cmd" | grep -Eq '^git\s+.*\s(-f|--hard)\b'; then
   exit 0
 fi
 
+# find -exec/-execdir bypasses the shell-invocation check because "-exec" is
+# preceded by "-", which is not in the anchor character class used on line 72.
+# Block it explicitly before reaching the allowlist so that "^find\b" cannot
+# be used to launder arbitrary subprocess execution.
+if printf '%s' "$cmd" | grep -Eqi '^find\b.*[[:space:]]-execdir?\b'; then
+  logtofile "DENY find -exec: $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"find -exec/-execdir blocked by policy"}}'
+  exit 0
+fi
+
 # Array of allowed command patterns (regex format)
 # Safe git commands: read-only, safe modifications, but blocks dangerous operations
 allowed_patterns=(

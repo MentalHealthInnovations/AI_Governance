@@ -19,11 +19,15 @@ if [[ -z "$url" ]]; then
   exit 0
 fi
 
-# Extract hostname from URL (strip scheme, path, port, query).
-# Assumes well-formed absolute URLs with a scheme (e.g. https://host/path).
-# Schemeless URLs (//host/path) or credential-embedded URLs (user:pass@host)
-# won't parse correctly, but the WebFetch tool always provides absolute https URLs.
-hostname="$(printf '%s' "$url" | sed -E 's|^[^:]+://([^/:?#@]*).*|\1|; s|^[^@]*@||')"
+# Extract hostname from URL (strip scheme, userinfo, path, port, query).
+# The regex uses two capture groups: group 1 optionally matches and discards a
+# "userinfo@" prefix (e.g. "user:pass@"), group 2 captures the actual host.
+# This prevents a bypass where an allowlisted domain is placed in the userinfo
+# position (https://allowed.com@attacker.com/path) — RFC 3986 §3.2.1 defines
+# userinfo as the component before @, so "allowed.com" would be the username and
+# "attacker.com" the real host. The old two-expression sed ran the @-strip on the
+# already-shortened string (which had no @ left), so the strip was a no-op.
+hostname="$(printf '%s' "$url" | sed -E 's|^[^:]+://([^/:?#@]*@)?([^/:?#]*).*|\2|')"
 
 logtofile "hostname extracted: $hostname"
 

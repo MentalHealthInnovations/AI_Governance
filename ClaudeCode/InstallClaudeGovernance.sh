@@ -31,7 +31,10 @@ mkdir -p "$claude_config_dir" "$claude_hooks_dir"
 
 echo "Cloning AI_Governance repository..."
 rm -rf "$ai_governance_repo_dir"
-git clone --quiet https://github.com/MentalHealthInnovations/AI_Governance "$ai_governance_repo_dir"
+# Pin to a specific signed release tag rather than cloning from the floating main
+# branch. This prevents a compromised push to main from silently deploying
+# arbitrary code as root on all managed machines via the daily cron job.
+git clone --quiet --branch v0.1 --depth 1 https://github.com/MentalHealthInnovations/AI_Governance "$ai_governance_repo_dir"
 
 echo "Copying managed-settings.json..."
 cp "$ai_governance_repo_dir/ClaudeCode/managed-settings.json" "$claude_config_dir"
@@ -74,7 +77,11 @@ int main() {
 }
 EOF
 sudo chown root "$wrapper_dest"
-sudo chmod 4755 "$wrapper_dest"
+# 4750 (setuid, rwx for owner, rx for group, none for others) restricts execution
+# to members of the "staff" group rather than every local user (4755 = world-executable).
+# This reduces the privilege-escalation surface: only users already in the group
+# can trigger a root-level policy update on demand.
+sudo chmod 4750 "$wrapper_dest"
 echo "Installed update_ai_governance wrapper."
 
 # cron_marker used to detect if the crontab already exists, and only add it if it doesn't
