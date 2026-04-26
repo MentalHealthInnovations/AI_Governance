@@ -8,9 +8,6 @@ This control pack provides a layered configuration system for Claude Code, desig
 |------|---------|
 | `ClaudeCode/managed-settings.json` | Org-wide immutable guardrails (Layer 1) |
 | `ClaudeCode/CLAUDE.md` | Behavioural guidance for Claude Code agents |
-| `ClaudeCode/__user__settings.json` | Example developer-level preferences (Layer 2) |
-| `ClaudeCode/__repo__settings.json` | Example team-wide project defaults (Layer 3) |
-| `ClaudeCode/settings.local.json` | Example personal project overrides (Layer 4) |
 | `ClaudeCode/control_mappings.csv` | Mapping of controls to ISO 42001 / NIST AI RMF |
 | `ClaudeCode/opt/claude/hooks/bash-policy-check.sh` | Pre-execution policy hook for bash commands |
 | `ClaudeCode/opt/claude/hooks/webfetch-policy-check.sh` | Pre-execution policy hook for WebFetch calls |
@@ -36,56 +33,9 @@ On each run, `pull_claude_governance.sh` deploys:
 
 ## Settings hierarchy
 
-Claude Code uses a four-layer configuration system. Higher layers take precedence over lower ones. Settings are merged top-down, so a rule defined at the managed level cannot be overridden by any layer below it.
+Claude Code uses a four-layer configuration system. Higher layers take precedence over lower ones; deny rules are cumulative and cannot be undone by a lower layer. See the [Claude Code documentation](https://code.claude.com/docs/en/settings#configuration-scopes) for a full description of each scope.
 
-```mermaid
-flowchart LR
-L1["**Managed settings**
-<code>managed-settings.json</code><br>
-Immutable, org-wide guardrails, deployed via MDM.<br>
-**Owns**: sandbox policy, approved MCP servers, credential deny rules, hooks"]
-L2["**User settings**
-<code>~/.claude/settings.json</code><br>
- Persistent across all projects on this machine.<br>
- **Owns**: formatting prefs, personal global allowlists"]
- L3["**Shared project settings**
-<code>.claude/settings.json</code> (verion-controlled)<br>
- Team-wide defaults that travel with the repo.<br>
- **Owns**: project task automation, shared prompt templates
- "]
- L4["**Local project settings **
- <code>.claude/settings.local.json</code> (git-ignored)<br>
- Personal overrides for a single project.<br>
- **Owns**: plan-mode testing, debug verbosity "]
-L1-->| overrides |L2
-L2-->| overrides |L3
-L3-->| overrides |L4
-
-```
-
-Deny rules are cumulative — a deny at any layer cannot be undone by an allow at a lower layer.
-
-### Layer 1 — Managed Settings (Organisation)
-
-This is the security boundary. It defines rules that no individual developer or project can weaken: network egress controls, credential-path deny rules, approved MCP servers, sandbox policy, and hooks that must always run. Developers cannot edit this file.
-
-### Layer 2 — User Settings (Developer)
-
-**File:** `~/.claude/settings.json`
-
-Persistent preferences that follow a developer across every project on their machine. Use for personal formatting preferences, editor integration settings, or additional allow rules within the boundaries set by the managed layer. Never committed to any repository.
-
-### Layer 3 — Shared Project Settings (Team)
-
-**File:** `.claude/settings.json` — committed to the repository.
-
-Team-wide defaults that travel with the codebase: project-specific task automation, shared prompt templates, or additional permission rules the team has agreed on. Changes go through normal code review.
-
-### Layer 4 — Local Project Settings (Individual)
-
-**File:** `.claude/settings.local.json` — git-ignored.
-
-Personal overrides scoped to a single project. Use for plan-mode testing, verbose output during debugging, or temporary configuration that shouldn't affect the team.
+The managed layer (`managed-settings.json`) is the security boundary. It defines rules that no individual developer or project can weaken: network egress controls, credential-path deny rules, approved MCP servers, sandbox policy, and hooks that must always run. Developers cannot edit this file.
 
 ### CLAUDE.md
 
