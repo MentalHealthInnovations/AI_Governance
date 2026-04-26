@@ -5,18 +5,13 @@
 set -u
 
 logtofile() {
-  echo "[$(date)] $1" >> "$HOME/.claude/debug/hook.log"
+  echo "[$(date)] [bash-policy] $1" >> "$HOME/.claude/debug/bash-policy.log"
 }
-
-logtofile "hook fired"
 
 payload="$(cat)"
 cmd="$(printf '%s' "$payload" | jq -r '.tool_input.command // empty')"
 
-logtofile "cmd extracted: $cmd"
-
 if [[ -z "$cmd" ]]; then
-  logtofile "no command found, exiting"
   exit 0
 fi
 
@@ -217,5 +212,4 @@ while IFS= read -r segment; do
   fi
 done < <(printf '%s' "$cmd" | sed 's/&&/\n/g; s/||/\n/g; s/;/\n/g; s/|/\n/g')
 
-logtofile "ALLOW all segments matched: $cmd"
 echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'

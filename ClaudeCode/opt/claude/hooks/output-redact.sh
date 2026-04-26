@@ -17,15 +17,12 @@
 
 set -u
 
-LOG="$HOME/.claude/debug/output-redact-hook.log"
-log() { echo "[$(date)] $1" >> "$LOG"; }
-
-log "hook fired (PostToolUse)"
+LOG="$HOME/.claude/debug/output-redact.log"
+log() { echo "[$(date)] [output-redact] $1" >> "$LOG"; }
 
 payload="$(cat)"
 
 tool_name="$(printf '%s' "$payload" | jq -r '.tool_name // empty')"
-log "tool: $tool_name"
 
 # Pull raw output text. Field names differ by tool:
 #   Bash:     .tool_response.stdout (primary output)
@@ -44,7 +41,6 @@ raw_output="$(printf '%s' "$payload" | jq -r '
 ')"
 
 if [[ -z "$raw_output" ]]; then
-  log "no output to scan, exiting"
   exit 0
 fi
 
@@ -134,11 +130,8 @@ redact_pattern "SSH_KEY_MATERIAL" \
 # ── Emit result ───────────────────────────────────────────────────────────────
 
 if [[ "$found" -eq 0 ]]; then
-  log "no sensitive values detected"
   exit 0
 fi
-
-log "values redacted, returning sanitised output via suppressOutput"
 
 # Bash output lives in .stdout; Read and WebFetch use .content.
 # suppressOutput hides the raw tool result from Claude; the replacement field

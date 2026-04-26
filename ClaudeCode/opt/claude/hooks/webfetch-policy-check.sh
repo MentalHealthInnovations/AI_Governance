@@ -4,18 +4,13 @@
 set -u
 
 logtofile() {
-  echo "[$(date)] $1" >> "$HOME/.claude/debug/hook.log"
+  echo "[$(date)] [webfetch-policy] $1" >> "$HOME/.claude/debug/webfetch-policy.log"
 }
-
-logtofile "webfetch hook fired"
 
 payload="$(cat)"
 url="$(printf '%s' "$payload" | jq -r '.tool_input.url // empty')"
 
-logtofile "url extracted: $url"
-
 if [[ -z "$url" ]]; then
-  logtofile "no url found, exiting"
   exit 0
 fi
 
@@ -71,7 +66,6 @@ for entry in "${allowed_entries[@]}"; do
 
   if [[ "$hostname" == "$entry_host" ]]; then
     if [[ -z "$entry_path" || "$path" == "$entry_path" || "$path" == "$entry_path/"* ]]; then
-      logtofile "ALLOW entry '$entry' matched: $url"
       echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
       exit 0
     fi
@@ -81,6 +75,6 @@ for entry in "${allowed_entries[@]}"; do
   fi
 done
 
-logtofile "DENY domain not in allowlist: $url"
+logtofile "DENY domain not in allowlist: $hostname"
 echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Domain not in WebFetch allowlist"}}'
 exit 0
