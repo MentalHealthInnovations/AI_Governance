@@ -3,12 +3,12 @@
 #
 # Registered for Bash, Read, and WebFetch. Scans tool_response for secret patterns
 # and replaces each match with [REDACTED] in-place, then returns the sanitised
-# content via suppressOutput so Claude never sees the raw value.
+# content via decision:block so Claude never sees the raw value.
 #
-# Using suppressOutput (rather than decision:block) is critical: block exits after
-# the tool has already returned, so Claude may have ingested the raw output before
-# the hook runs. suppressOutput replaces the content in the harness before it is
-# added to the conversation context.
+# decision:block is the correct mechanism: it prevents the tool output from
+# entering Claude's context window. The reason field carries the sanitised text
+# that Claude sees instead. suppressOutput additionally hides raw values from
+# the debug log.
 #
 # To add a new pattern:
 #   Add one redact_pattern call in the "Patterns" section with:
@@ -21,8 +21,6 @@ LOG="$HOME/.claude/debug/output-redact.log"
 log() { echo "[$(date)] [output-redact] $1" >> "$LOG"; }
 
 payload="$(cat)"
-
-tool_name="$(printf '%s' "$payload" | jq -r '.tool_name // empty')"
 
 # Pull raw output text. Field names differ by tool:
 #   Bash:     .tool_response.stdout (primary output)
@@ -133,21 +131,12 @@ if [[ "$found" -eq 0 ]]; then
   exit 0
 fi
 
-# Bash output lives in .stdout; Read and WebFetch use .content.
-# suppressOutput hides the raw tool result from Claude; the replacement field
-# contains the sanitised text that Claude sees instead.
-if [[ "$tool_name" == "Bash" ]]; then
-  output_field="stdout"
-else
-  output_field="content"
-fi
-
+# Block the tool output from entering Claude's context.
+# decision:block prevents Claude from seeing the raw output; reason tells Claude
+# what happened. suppressOutput additionally hides the raw value from debug logs.
 printf '%s' "$redacted" | jq -Rs \
-  --arg field "$output_field" \
   '{
-    hookSpecificOutput: {
-      hookEventName: "PostToolUse",
-      suppressOutput: true,
-      ($field): .
-    }
+    decision: "block",
+    reason: ("Tool output contained one or more secret patterns and was redacted by output-redact.sh. Sanitised output:\n\n" + .),
+    suppressOutput: true
   }'
