@@ -161,6 +161,23 @@ For hook script updates or permission rule changes, don't wait for the cron:
 2. Run `update_ai_governance` on affected machines.
 3. Run `/test-guardrails` to confirm the change is live and no regressions were introduced.
 
+## Troubleshooting
+
+### Hook errors
+
+If Claude Code surfaces an error like `hook exited with non-zero status` or `hook script not found` when running a Bash command, WebFetch, or file read, the most likely cause is that the hook scripts were not deployed to `/opt/claude/hooks/` on this machine.
+
+**Fix:** run `update_ai_governance` in your terminal (no sudo required). This pulls the latest policy files from the repo and deploys them. Then retry the operation.
+
+If the error persists after deploying:
+
+1. Confirm the hook files exist: `ls /opt/claude/hooks/`
+2. Confirm they are executable: `ls -l /opt/claude/hooks/*.sh`
+3. Check the hook log for the specific failure: `~/.claude/debug/bash-policy.log`, `~/.claude/debug/webfetch-policy.log`, or `~/.claude/debug/output-redact.log`
+4. Run `/test-guardrails` in Claude Code to identify which hook is failing and whether it is a policy block or an unexpected error
+
+If a command you expect to be allowed is being blocked, check the hook log for the block reason. If it looks like a false positive, raise a change request through the security/platform team rather than trying to work around it.
+
 ## Change control
 
 ### Security / platform team
