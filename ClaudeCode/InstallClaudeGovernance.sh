@@ -13,47 +13,25 @@
 set -e
 
 script_dest="/usr/local/bin/pull_claude_governance.sh"
+ai_governance_repo_dir="/tmp/AI_Governance"
 
 echo "Starting to pull Claude governance files."
 
-# Create a script to pull the latest governance files, to be run by crontab and when this script is run
-sudo tee "$script_dest" > /dev/null << 'EOF'
-#!/usr/bin/env bash
-
-set -e
-
-claude_config_dir="/Library/Application Support/ClaudeCode/"
-claude_hooks_dir="/opt/claude/hooks/"
-ai_governance_repo_dir="/tmp/AI_Governance"
-
-echo "Creating directories..."
-mkdir -p "$claude_config_dir" "$claude_hooks_dir"
-
+# Bootstrap: clone the repo, copy pull_claude_governance.sh to /usr/local/bin/, then execute it.
+# After this first install, pull_claude_governance.sh self-updates on every subsequent run —
+# changes to it deploy automatically via the daily cron without requiring this script to be re-run.
 echo "Cloning AI_Governance repository..."
 rm -rf "$ai_governance_repo_dir"
-# Pin to a specific signed release tag rather than cloning from the floating main
-# branch. This prevents a compromised push to main from silently deploying
-# arbitrary code as root on all managed machines via the daily cron job.
-git clone --quiet --branch v0.1 --depth 1 https://github.com/MentalHealthInnovations/AI_Governance "$ai_governance_repo_dir"
+git clone --quiet --depth 1 https://github.com/MentalHealthInnovations/AI_Governance "$ai_governance_repo_dir"
 
-echo "Copying managed-settings.json..."
-cp "$ai_governance_repo_dir/ClaudeCode/managed-settings.json" "$claude_config_dir"
-
-echo "Copying CLAUDE.md..."
-cp "$ai_governance_repo_dir/ClaudeCode/CLAUDE.md" "$claude_config_dir"
-
-echo "Copying hooks..."
-cp "$ai_governance_repo_dir"/ClaudeCode/opt/claude/hooks/* "$claude_hooks_dir"
-
-echo "Cleaning up..."
+echo "Installing pull script..."
+sudo cp "$ai_governance_repo_dir/ClaudeCode/pull_claude_governance.sh" "$script_dest"
+sudo chmod +x "$script_dest"
 rm -rf "$ai_governance_repo_dir"
-
-echo "Governance files updated successfully."
-EOF
 
 echo "Created script to pull governance files."
 
-# Run the created script
+# Run the installed script to deploy all policy files
 sudo "$script_dest"
 
 echo "Installed governance files."

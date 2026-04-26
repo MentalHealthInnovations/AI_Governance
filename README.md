@@ -15,7 +15,8 @@ This control pack provides a layered configuration system for Claude Code, desig
 | `ClaudeCode/opt/claude/hooks/bash-policy-check.sh` | Pre-execution policy hook for bash commands |
 | `ClaudeCode/opt/claude/hooks/webfetch-policy-check.sh` | Pre-execution policy hook for WebFetch calls |
 | `ClaudeCode/opt/claude/hooks/output-redact.sh` | Post-execution output redaction hook for Bash, Read, and WebFetch |
-| `ClaudeCode/InstallClaudeGovernance.sh` | Installation script for macOS |
+| `ClaudeCode/pull_claude_governance.sh` | Script deployed to `/usr/local/bin/` — clones the repo and copies policy files; self-updates on each run |
+| `ClaudeCode/InstallClaudeGovernance.sh` | One-time installation script for macOS (bootstraps `pull_claude_governance.sh`) |
 | `docs/staff-brief.md` | Non-technical overview for staff receiving Claude Code |
 | `docs/exception-process.md` | How to request policy changes or exceptions |
 
