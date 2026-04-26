@@ -122,7 +122,7 @@ Hooks run as pre-execution checks at the managed level.
 
 **`webfetch-policy-check.sh`** runs before every WebFetch call. It enforces an allowlist of approved domains, blocking requests to any domain not explicitly permitted in `managed-settings.json`.
 
-**`output-redact.sh`** runs after every Bash, Read, and WebFetch call. It scans the tool output for API keys, credentials, and other sensitive values, replacing matches with `[REDACTED]` before the content reaches Claude's context window. Each redaction is logged (pattern name and first six characters of the match) for audit purposes — the full value is never written to the log. Patterns covered include: PEM blocks, AWS access key IDs and secret keys, GitHub PATs (classic and fine-grained), OpenAI/Anthropic `sk-` keys, Slack tokens, JWTs, Bearer headers, generic `key=value` / `password=value` env assignments, and Stripe/Twilio/SendGrid vendor keys.
+**`output-redact.sh`** runs after every Bash, Read, and WebFetch call (`PostToolUse`). It scans tool output for API keys, credentials, and other sensitive values. If a match is found the result is blocked — the output never enters Claude's context window — and the tool call surfaces as a blocked result. The UI transcript may still display the raw output, but Claude cannot read or act on it. Each detection is logged (pattern name and first six characters of the match) for audit purposes — the full value is never written to the log. Patterns covered include: PEM blocks, AWS access key IDs and secret keys, GitHub PATs (classic and fine-grained), OpenAI/Anthropic `sk-` keys, Slack tokens, JWTs, Bearer headers, generic `key=value` / `password=value` env assignments, connection strings, and Stripe/Twilio/SendGrid vendor keys.
 
 Hooks are deployed to `/opt/claude/hooks/` by the install script and must be present before Claude Code is used. If a hook is missing or fails, the operation is blocked (`failIfUnavailable: true` in sandbox settings).
 
@@ -134,6 +134,42 @@ Use approval and denial telemetry to tune the middle layer over time:
 - Promote repetitive safe asks into allow.
 - Keep hard deny rules small, stable, and explicit.
 - Avoid creating so many prompts that users stop reading them carefully.
+
+## Deployment
+
+Merging to `main` does **not** automatically deploy to managed machines — the daily cron job pulls on its own schedule. See [Installation](#installation) for what `pull_claude_governance.sh` deploys and where.
+
+### Deploying a change immediately
+
+To push a change to a specific machine without waiting for the daily cron:
+
+```bash
+# As any local user (no sudo required — uses the setuid binary installed by InstallClaudeGovernance.sh)
+update_ai_governance
+
+# Or directly as root
+/usr/local/bin/pull_claude_governance.sh
+```
+
+### Verifying deployment
+
+After deploying, confirm the installed files match the repo:
+
+```bash
+# Check hook script versions match what was deployed
+shasum -a 256 /opt/claude/hooks/*.sh
+shasum -a 256 /Library/Application\ Support/ClaudeCode/managed-settings.json
+```
+
+Then run `/test-guardrails` in Claude Code to confirm all controls are active.
+
+### After merging a security-sensitive change
+
+For hook script updates or permission rule changes, don't wait for the cron:
+
+1. Merge the PR.
+2. Run `update_ai_governance` on affected machines.
+3. Run `/test-guardrails` to confirm the change is live and no regressions were introduced.
 
 ## Change control
 
