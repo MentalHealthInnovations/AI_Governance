@@ -31,8 +31,12 @@ logtofile "hostname extracted: $hostname"
 #   "example.com/path"   — allows requests to exactly example.com under /path/* only
 #
 # No wildcard subdomain matching — subdomains must be listed explicitly.
-# Must be kept in sync with network.allowedDomains in managed-settings.json
-# (which only supports bare hostnames — add just the host part there).
+#
+# *** SYNC REQUIRED ***
+# This list and network.allowedDomains in managed-settings.json enforce the same
+# boundary at different layers (hook vs OS sandbox) and must be kept identical.
+# When adding or removing a domain here, make the same change in managed-settings.json.
+# Use only the bare hostname there — path-scoped entries are only supported in this file.
 allowed_entries=(
   "github.com"
   "api.github.com"

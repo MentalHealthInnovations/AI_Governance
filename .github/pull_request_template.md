@@ -24,6 +24,7 @@
 - [ ] Hook scripts (`bash-policy-check.sh`, `webfetch-policy-check.sh`, `output-redact.sh`)
 - [ ] Sandbox configuration (filesystem allow/deny lists, network allowed domains)
 - [ ] Permission rules (allow/deny entries in `managed-settings.json`)
+- [ ] Domain allowlist — if changed, confirm both `managed-settings.json` (`network.allowedDomains`) and `webfetch-policy-check.sh` (`ALLOWED_DOMAINS`) were updated together
 - [ ] `managed-settings.json` settings that affect policy enforcement
 - [ ] The test skill itself (`/test-guardrails`)
 
