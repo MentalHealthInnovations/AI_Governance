@@ -176,11 +176,11 @@ If the error persists after deploying:
 3. Check the hook log for the specific failure: `~/.claude/debug/bash-policy.log`, `~/.claude/debug/webfetch-policy.log`, or `~/.claude/debug/output-redact.log`
 4. Run `/test-guardrails` in Claude Code to identify which hook is failing and whether it is a policy block or an unexpected error
 
-If a command you expect to be allowed is being blocked, check the hook log for the block reason. If it looks like a false positive, raise a change request through the security/platform team rather than trying to work around it.
+If a command you expect to be allowed is being blocked, check the hook log for the block reason. If it looks like a false positive, raise a PR or contact the IT and security team rather than trying to work around it.
 
 ## Change control
 
-### Security / platform team
+### IT and security team
 
 Own: `managed-settings.json`, `CLAUDE.md`, managed hooks, sandbox policy, approved domains and MCP servers.
 
@@ -193,6 +193,25 @@ Own: `.claude/settings.json`, repo-local safe task automation, repo-specific low
 Own: `~/.claude/settings.json`, `.claude/settings.local.json`.
 
 Engineers may improve convenience inside the rails, but they do not control the rails.
+
+### What needs a PR to this repo?
+
+**Important:** the settings layers (`~/.claude/settings.json`, `.claude/settings.json`) control whether Claude asks for permission before acting. They do not control what the hooks allow. The hooks run regardless of settings layer configuration and enforce their own allowlists independently. This means adding an allow rule to your personal or project settings will not unblock something the hooks reject — that requires a change to the hook script or `managed-settings.json` in this repo.
+
+Use this table to route your request:
+
+| What you want | Goes through this repo? | Who to ask |
+|---|---|---|
+| Allow a new domain for WebFetch | Yes | Raise a PR to `managed-settings.json` and `webfetch-policy-check.sh` — contact the IT and security team if you need help |
+| Allow a Bash command the hook currently blocks | Yes | Raise a PR to `bash-policy-check.sh` — contact the IT and security team if you need help |
+| Add or update a secret-detection pattern | Yes | Raise a PR to `output-redact.sh` — contact the IT and security team if you need help |
+| Request a new MCP server | Yes | Raise a PR to `managed-settings.json` — contact the IT and security team if you need help |
+| Update behavioural guidance (coding conventions, tone) | Yes | Raise a PR to `CLAUDE.md` — contact the IT and security team if you need help |
+| Add a team-wide allow rule for a repo (non-hook) | Yes | Repo maintainer — PR to `.claude/settings.json` in that repo |
+| Personal formatting or verbosity preferences | No | Edit `~/.claude/settings.json` locally |
+| Temporary plan-mode or debug config for one project | No | Edit `.claude/settings.local.json` locally (git-ignored) |
+
+If in doubt, raise an issue in this repo describing what you need and why, or contact the IT and security team directly.
 
 ## Governance alignment
 
