@@ -43,7 +43,13 @@ cp "$ai_governance_repo_dir/ClaudeCode/CLAUDE.md" "$claude_config_dir"
 echo "Copying hooks..."
 cp "$ai_governance_repo_dir"/ClaudeCode/opt/claude/hooks/* "$claude_hooks_dir"
 
+echo "Writing version stamp..."
+# Record the deployed SHA so fleet operators can verify which policy version is
+# active on a given machine without diffing files manually.
+git -C "$ai_governance_repo_dir" rev-parse HEAD > "$claude_config_dir/VERSION"
+
 echo "Cleaning up..."
 rm -rf "$ai_governance_repo_dir"
 
-echo "Governance files updated successfully."
+deployed_sha="$(cat "$claude_config_dir/VERSION")"
+echo "Governance files updated successfully. Deployed version: $deployed_sha"

@@ -100,7 +100,7 @@ Each hook writes to a local log file when it blocks or allows an operation:
 | `webfetch-policy-check.sh` | `~/.claude/debug/webfetch-policy.log` |
 | `output-redact.sh` | `~/.claude/debug/output-redact.log` |
 
-Only deny and redact events are logged — allowed operations produce no log entry. The `output-redact` log records the pattern name and the first six characters of the matched value — never the full secret.
+Only deny and redact events are logged — allowed operations produce no log entry. Each log line includes the working directory at the time of the call, so entries from different projects can be attributed without ambiguity. The `output-redact` log records the pattern name and the first six characters of the matched value — never the full secret.
 
 ### What to review
 
@@ -116,13 +116,35 @@ Hook logs are local by default. To aggregate them centrally, configure your endp
 
 Until centralised collection is in place, logs must be reviewed on a per-machine basis — for example, as part of a periodic compliance check or in response to a reported incident.
 
+### Log rotation
+
+Hook logs grow indefinitely. To rotate them manually on a managed machine:
+
+```bash
+# Truncate all three logs (macOS — no logrotate by default)
+: > ~/.claude/debug/bash-policy.log
+: > ~/.claude/debug/webfetch-policy.log
+: > ~/.claude/debug/output-redact.log
+```
+
+For automated rotation, add a `newsyslog` config to `/etc/newsyslog.d/`. Because the logs are per-user, the config must be installed with the real home path expanded. Example for a user `alice`:
+
+```
+# /etc/newsyslog.d/claude-hooks-alice.conf
+/Users/alice/.claude/debug/bash-policy.log     alice:staff  640  7  -1  $D0  ZN
+/Users/alice/.claude/debug/webfetch-policy.log alice:staff  640  7  -1  $D0  ZN
+/Users/alice/.claude/debug/output-redact.log   alice:staff  640  7  -1  $D0  ZN
+```
+
+This rotates daily (`$D0`), keeps 7 compressed archives, and sends no signal (no daemon to notify). Adjust `count` and `when` to taste. See `man 5 newsyslog.conf` for the full format.
+
 ### Incident response
 
 If you suspect a guardrail bypass:
 
 1. Review the local hook logs on the affected machine for anomalous patterns.
-2. Check git history for any recent changes to the managed settings or hook scripts — these require two-person approval and should match what is in `main`.
-3. Verify installed hooks match the repository: `shasum -a 256 /opt/claude/hooks/*.sh` and compare against `shasum -a 256 ClaudeCode/opt/claude/hooks/*.sh` in the repo.
+2. Check the deployed version: `cat /Library/Application\ Support/ClaudeCode/VERSION` and confirm it matches the expected commit in `main`.
+3. Verify installed hooks match the repository at that SHA: `shasum -a 256 /opt/claude/hooks/*.sh` and compare against `shasum -a 256 ClaudeCode/opt/claude/hooks/*.sh` in the repo.
 4. If there is evidence of tampering, treat it as a security incident and follow MHI's standard incident response procedure.
 
 ## Deployment
@@ -143,10 +165,13 @@ update_ai_governance
 
 ### Verifying deployment
 
-After deploying, confirm the installed files match the repo:
+After deploying, confirm the installed version and that files match the repo:
 
 ```bash
-# Check hook script versions match what was deployed
+# Check which policy version is deployed on this machine
+cat /Library/Application\ Support/ClaudeCode/VERSION
+
+# Verify installed files match the repo at that SHA
 shasum -a 256 /opt/claude/hooks/*.sh
 shasum -a 256 /Library/Application\ Support/ClaudeCode/managed-settings.json
 ```
