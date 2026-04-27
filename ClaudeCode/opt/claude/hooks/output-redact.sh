@@ -18,7 +18,7 @@
 set -u
 
 LOG="$HOME/.claude/debug/output-redact.log"
-log() { echo "[$(date)] [output-redact] $1" >> "$LOG"; }
+log() { echo "[$(date)] [output-redact] [$(pwd)] $1" >> "$LOG"; }
 
 payload="$(cat)"
 

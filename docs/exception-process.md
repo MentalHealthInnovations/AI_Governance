@@ -33,7 +33,7 @@ Before raising a request, verify there is no alternative approach. Claude Code w
 
 ### Step 2 — Raise a pull request
 
-All policy changes are made through the [AI Governance repository](https://github.com/mhiuk/ai-governance) on GitHub. To submit a request:
+All policy changes are made through the [AI Governance repository](https://github.com/MentalHealthInnovations/AI_Governance) on GitHub. To submit a request:
 
 1. Open a pull request against the `main` branch of the AI Governance repository
 2. Use the PR template — it will prompt you for the required information, including a security risk assessment

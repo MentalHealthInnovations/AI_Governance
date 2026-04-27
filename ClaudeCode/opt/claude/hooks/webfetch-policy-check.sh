@@ -4,7 +4,7 @@
 set -u
 
 logtofile() {
-  echo "[$(date)] [webfetch-policy] $1" >> "$HOME/.claude/debug/webfetch-policy.log"
+  echo "[$(date)] [webfetch-policy] [$(pwd)] $1" >> "$HOME/.claude/debug/webfetch-policy.log"
 }
 
 payload="$(cat)"

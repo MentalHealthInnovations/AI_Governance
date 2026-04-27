@@ -50,5 +50,5 @@ The security and platform team at MHI owns the managed settings. Changes to the 
 ## Where can I learn more?
 
 - [MHI AI Policy](https://www.mentalhealthinnovations.org) — the organisational policy this control pack implements
-- [AI Governance GitHub repository](https://github.com/mhiuk/ai-governance) — the technical controls (for engineers and security team)
+- [AI Governance GitHub repository](https://github.com/MentalHealthInnovations/AI_Governance) — the technical controls (for engineers and security team)
 - Anthropic's [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code) — official product documentation

@@ -5,7 +5,7 @@
 set -u
 
 logtofile() {
-  echo "[$(date)] [bash-policy] $1" >> "$HOME/.claude/debug/bash-policy.log"
+  echo "[$(date)] [bash-policy] [$(pwd)] $1" >> "$HOME/.claude/debug/bash-policy.log"
 }
 
 payload="$(cat)"
@@ -95,6 +95,15 @@ fi
 if printf '%s' "$cmd" | grep -Eqi '^find\b.*[[:space:]]-execdir?\b'; then
   logtofile "DENY find -exec: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"find -exec/-execdir blocked by policy"}}'
+  exit 0
+fi
+
+# find -delete is a built-in mass-deletion action that bypasses the shell-invocation
+# check for the same reason as -exec. Block it here for defense-in-depth even though
+# the FS sandbox limits write scope.
+if printf '%s' "$cmd" | grep -Eqi '^find\b.*[[:space:]]-delete\b'; then
+  logtofile "DENY find -delete: $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"find -delete blocked by policy"}}'
   exit 0
 fi
 
