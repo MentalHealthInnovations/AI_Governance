@@ -14,8 +14,6 @@ This control pack provides a layered configuration system for Claude Code, desig
 | `ClaudeCode/opt/claude/hooks/output-redact.sh` | Post-execution output redaction hook for Bash, Read, and WebFetch |
 | `ClaudeCode/pull_claude_governance.sh` | Script deployed to `/usr/local/bin/` — clones the repo and copies policy files; self-updates on each run |
 | `ClaudeCode/InstallClaudeGovernance.sh` | One-time installation script for macOS (bootstraps `pull_claude_governance.sh`) |
-| `docs/staff-brief.md` | Non-technical overview for staff receiving Claude Code |
-| `docs/exception-process.md` | How to request policy changes or exceptions |
 | `.claude/skills/test-guardrails/SKILL.md` | Claude Code skill that runs the guardrail verification suite (`/test-guardrails`) |
 
 ## Installation
@@ -242,3 +240,141 @@ If in doubt, raise an issue in this repo describing what you need and why, or co
 ## Governance alignment
 
 `control_mappings.csv` maps all controls to ISO 42001 AI management system requirements and NIST AI RMF, as well as OWASP LLM risks (LLM01 Prompt Injection, LLM02 Insecure Output, LLM06 Sensitive Info Disclosure, LLM08 Excessive Agency).
+
+---
+
+## Staff communication — Claude Code at MHI
+
+*The following is intended to be sent to or shared with all staff receiving Claude Code. It provides a non-technical overview of what is changing and what to expect.*
+
+### What is Claude Code?
+
+Claude Code is an AI assistant that works directly inside your code editor or terminal. You can ask it to explain code, write tests, review a pull request, or help you debug a problem. It works by reading files on your machine and running commands on your behalf — which is why we need guardrails around it.
+
+### What are the guardrails?
+
+We've deployed a governance control pack that limits what Claude Code can do on managed machines. These controls run automatically in the background — you don't need to configure anything.
+
+**What the controls do:**
+
+- Block Claude from reading secret files (passwords, API keys, SSH keys, cloud credentials)
+- Prevent Claude from running dangerous shell commands (e.g. force-pushing to git, deleting files with `rm -rf`, using network tools like `curl`)
+- Restrict which websites Claude can visit to a known-safe list
+- Redact any secrets that might appear in file contents before Claude can read them
+
+**What the controls don't do:**
+
+- They don't stop Claude from helping you with normal coding work
+- They don't record your conversations or send them anywhere new
+- They don't restrict what you type — only what Claude is allowed to execute on your behalf
+
+### Will I notice any difference?
+
+For most tasks, no. The controls are designed to allow common, safe operations (reading code, running tests, making commits, opening pull requests) without interruption.
+
+You may occasionally see Claude decline a request and explain why. When that happens, it will tell you which policy blocked it and suggest alternatives. If it declines something you think it should be able to do, see [What to do if Claude refuses something](#what-to-do-if-claude-refuses-something) below.
+
+### What does Claude Code know about me?
+
+Claude Code has access to the files and terminal on your machine, within the sandbox boundaries set by the governance controls. It does not have persistent memory between sessions by default. Your conversations with Claude Code are subject to Anthropic's data handling policies — the same as other Claude products used at MHI.
+
+### What to do if Claude refuses something
+
+If Claude refuses a request that you think it should be able to do:
+
+1. **Check the reason** — Claude will tell you which rule blocked it. Common causes are commands that look like privilege escalation, accessing a restricted file path, or reaching a domain outside the approved list.
+2. **Try a different approach** — Often the same outcome can be reached a different way. Claude will usually suggest an alternative.
+3. **Request an exception** — If you have a legitimate use case that the current policy doesn't cover, you can request a policy change. See [Exception and escalation process](#exception-and-escalation-process) in this document.
+
+### Who owns the governance controls?
+
+The security and platform team at MHI owns the managed settings. Changes to the controls go through a formal review process. Individual engineers can add personal preferences (formatting, shortcuts) within the boundaries the managed layer sets, but they cannot remove or weaken the core controls.
+
+**Contacts:**
+- Policy questions or exception requests: max.levine@mhiuk.org or edward@mhiuk.org
+- Technical issues with Claude Code (crashes, install problems): raise a ticket through the usual IT helpdesk
+
+### Where can I learn more?
+
+- [MHI AI Policy](https://www.mentalhealthinnovations.org) — the organisational policy this control pack implements
+- [AI Governance GitHub repository](https://github.com/MentalHealthInnovations/AI_Governance) — the technical controls (for engineers and security team)
+- Anthropic's [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code) — official product documentation
+
+---
+
+## Exception and escalation process
+
+This section describes how to request a change to the Claude Code governance controls — either a permanent policy change or a time-limited exception.
+
+### When to use this process
+
+Use this process if:
+
+- Claude Code refuses a command you need for legitimate work and no alternative approach exists
+- Your team needs access to a domain or tool not currently on the approved list
+- A project requires Claude to read a file type that the current controls restrict
+- You believe a control is misconfigured and producing false positives
+
+Do not use this process to work around controls you simply find inconvenient. The controls exist to protect MHI and its clients.
+
+### Types of change
+
+| Type | Description | Typical timeline |
+|---|---|---|
+| **Policy change** | Permanent update to managed settings, applied org-wide | 1–2 weeks (requires security review and testing) |
+| **Allowlist addition** | Adding a domain, command, or file path to an approved list | 3–5 days |
+| **Time-limited exception** | Temporary relaxation of a specific control for a defined project or date range | Case by case |
+
+### How to request
+
+#### Step 1 — Check whether an alternative exists
+
+Before raising a request, verify there is no alternative approach. Claude Code will usually suggest one when it refuses a command. Many refusals can be resolved by:
+
+- Rephrasing the request to use an approved command
+- Using a different tool that is already on the approved list
+- Asking Claude to generate the command for you to run manually
+
+#### Step 2 — Raise a pull request
+
+All policy changes are made through the [AI Governance repository](https://github.com/MentalHealthInnovations/AI_Governance) on GitHub. To submit a request:
+
+1. Open a pull request against the `main` branch of the AI Governance repository
+2. Use the PR template — it will prompt you for the required information, including a security risk assessment
+3. Describe what you need, why you need it, and which users or machines it would apply to
+
+If you're not comfortable raising a PR yourself, contact max.levine@mhiuk.org or edward@mhiuk.org and they can raise it on your behalf.
+
+#### Step 3 — Review
+
+The security team will assess the PR against:
+
+- Whether the use case is covered by existing controls in a different way
+- The risk of widening the control (could this be exploited by a prompt injection attack?)
+- Whether an org-wide change is appropriate or whether a project-level setting is better
+
+All changes to the repository require approval from both CODEOWNERS (@edwardmhi and @maxlevine-mhi) before they can be merged. You'll receive a response within **5 working days**. For urgent cases, flag this in the PR description.
+
+#### Step 4 — Testing and deployment
+
+Approved PRs are:
+
+1. Tested with `/test-guardrails` before merge — this is a Claude Code skill defined in `.claude/skills/test-guardrails/SKILL.md`. Open Claude Code in the AI Governance repository working directory and type `/test-guardrails` at the prompt to run the full verification suite.
+2. Merged to `main` by the security team
+3. Deployed to managed machines via the next daily cron run (or immediately via `update_ai_governance` on affected machines)
+
+You'll be notified once the change is live.
+
+### Escalation
+
+If your request is declined and you believe the decision is wrong, escalate to your line manager. They can raise it formally with the head of IT or security as appropriate.
+
+### Frequently refused requests
+
+| Request | Reason refused | Suggested alternative |
+|---|---|---|
+| Allow `curl` / `wget` | High-risk exfiltration vector | Use the `WebFetch` tool, which is subject to domain allowlisting |
+| Allow `sudo` | Privilege escalation risk | Perform privileged operations outside of Claude Code |
+| Allow access to `.env` files | High-risk credential exposure | Pass values as environment variables; don't put credentials in files Claude reads |
+| Allow arbitrary domains | Network egress control | Submit a domain addition request — most legitimate domains can be added in a few days |
+| Allow `--force` git flags | Destructive operation risk | Use non-destructive git workflows; Claude can help you achieve the same outcome safely |
