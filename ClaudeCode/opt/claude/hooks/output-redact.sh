@@ -117,12 +117,12 @@ redact_pattern "CONNECTION_STRING" \
   '(mongodb(\+srv)?|postgres(ql)?|mysql|redis|amqp):\/\/[^:@\s]+:[^@\s"'"'"']+@'
 
 # Generic secret assignments in config files and env vars.
-# Requires >=24-char value to reduce false positives on short config values.
+# Requires >=20-char value — matches AWS key length as a plausible-secret threshold.
 # `secret` alone is excluded — must appear as a compound key (client_secret etc.)
 # to avoid firing on innocuous uses of the word. Placeholder values (example,
 # placeholder, your-, xxx, changeme, dummy, fake, test, sample) are excluded.
 redact_pattern "KEY_ASSIGNMENT" \
-  '(?i)(api[_-]?key|api[_-]?secret|auth[_-]?token|access[_-]?token|client[_-]?secret|private[_-]?key|refresh[_-]?token|session[_-]?token|encryption[_-]?key|signing[_-]?key|password|passwd)\s*[=:]\s*["\x27]?(?!.*(?:example|placeholder|your[-_]|xxx|changeme|dummy|fake|test|sample))[A-Za-z0-9+\/\-_!@#$%^&*]{24,}["\x27]?'
+  '(?i)(api[_-]?key|api[_-]?secret|auth[_-]?token|access[_-]?token|client[_-]?secret|private[_-]?key|refresh[_-]?token|session[_-]?token|encryption[_-]?key|signing[_-]?key|password|passwd)\s*[=:]\s*["\x27]?(?!.*(?:example|placeholder|your[-_]|xxx|changeme|dummy|fake|test|sample))[A-Za-z0-9+\/\-_!@#$%^&*]{20,}["\x27]?'
 
 # SSH public key base64 material (outside a PEM block)
 redact_pattern "SSH_KEY_MATERIAL" \
