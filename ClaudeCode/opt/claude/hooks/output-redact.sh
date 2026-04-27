@@ -100,9 +100,12 @@ redact_pattern "SLACK_TOKEN" \
 redact_pattern "JWT" \
   'eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+'
 
-# Authorization: Bearer / Token / Basic headers
+# Authorization: Bearer / Token / Basic headers.
+# Requires the value to contain at least one digit, uppercase letter, or
+# symbol — this excludes plain lowercase words (e.g. "basic commands")
+# while still catching base64-encoded credentials and opaque tokens.
 redact_pattern "AUTH_HEADER" \
-  '(?i)(bearer|token|basic)\s+[A-Za-z0-9_.~+\/=-]{8,}'
+  '(?i)(bearer|token|basic)\s+(?=[A-Za-z0-9_.~+\/=-]*[A-Z0-9_.~+\/=-])[A-Za-z0-9_.~+\/=-]{8,}'
 
 # Twilio API keys
 redact_pattern "TWILIO_KEY" \
