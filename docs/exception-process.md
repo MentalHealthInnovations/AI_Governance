@@ -55,7 +55,7 @@ All changes to the repository require approval from both CODEOWNERS (@edwardmhi 
 
 Approved PRs are:
 
-1. Tested with `/test-guardrails` before merge
+1. Tested with `/test-guardrails` before merge — this is a Claude Code skill defined in `.claude/skills/test-guardrails/SKILL.md`. Open Claude Code in the AI Governance repository working directory and type `/test-guardrails` at the prompt to run the full verification suite.
 2. Merged to `main` by the security team
 3. Deployed to managed machines via the next daily cron run (or immediately via `update_ai_governance` on affected machines)
 

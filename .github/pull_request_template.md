@@ -4,7 +4,7 @@
 
 ## Guardrail test results
 
-<!-- Run /test-guardrails in Claude Code and paste the full results table here. -->
+<!-- Run /test-guardrails in Claude Code (open this repo as the working directory, then type /test-guardrails at the prompt). -->
 <!-- PRs that modify hooks, permissions, sandbox config, or managed-settings.json must include a full run. -->
 <!-- PRs that only change documentation or test fixtures should include a run if practical. -->
 
@@ -12,7 +12,7 @@
 <summary>Test run output</summary>
 
 ```
-<!-- Paste the markdown results table from /test-guardrails here -->
+<!-- Paste the markdown results table here -->
 ```
 
 </details>

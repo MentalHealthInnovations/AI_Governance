@@ -16,6 +16,7 @@ This control pack provides a layered configuration system for Claude Code, desig
 | `ClaudeCode/InstallClaudeGovernance.sh` | One-time installation script for macOS (bootstraps `pull_claude_governance.sh`) |
 | `docs/staff-brief.md` | Non-technical overview for staff receiving Claude Code |
 | `docs/exception-process.md` | How to request policy changes or exceptions |
+| `.claude/skills/test-guardrails/SKILL.md` | Claude Code skill that runs the guardrail verification suite (`/test-guardrails`) |
 
 ## Installation
 
@@ -176,7 +177,7 @@ shasum -a 256 /opt/claude/hooks/*.sh
 shasum -a 256 /Library/Application\ Support/ClaudeCode/managed-settings.json
 ```
 
-Then run `/test-guardrails` in Claude Code to confirm all controls are active.
+Then run `/test-guardrails` in Claude Code to confirm all controls are active. This skill (defined in `.claude/skills/test-guardrails/SKILL.md`) is available when Claude Code is opened in this repository's working directory.
 
 ### After merging a security-sensitive change
 
@@ -184,7 +185,7 @@ For hook script updates or permission rule changes, don't wait for the cron:
 
 1. Merge the PR.
 2. Run `update_ai_governance` on affected machines.
-3. Run `/test-guardrails` to confirm the change is live and no regressions were introduced.
+3. Open Claude Code in this repository's working directory and run `/test-guardrails` to confirm the change is live and no regressions were introduced.
 
 ## Troubleshooting
 
@@ -199,7 +200,7 @@ If the error persists after deploying:
 1. Confirm the hook files exist: `ls /opt/claude/hooks/`
 2. Confirm they are executable: `ls -l /opt/claude/hooks/*.sh`
 3. Check the hook log for the specific failure: `~/.claude/debug/bash-policy.log`, `~/.claude/debug/webfetch-policy.log`, or `~/.claude/debug/output-redact.log`
-4. Run `/test-guardrails` in Claude Code to identify which hook is failing and whether it is a policy block or an unexpected error
+4. Run `/test-guardrails` in Claude Code (opened in this repository's working directory) to identify which hook is failing and whether it is a policy block or an unexpected error
 
 If a command you expect to be allowed is being blocked, check the hook log for the block reason. If it looks like a false positive, raise a PR or contact the IT and security team rather than trying to work around it.
 
