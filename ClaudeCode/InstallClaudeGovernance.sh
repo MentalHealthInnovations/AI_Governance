@@ -49,8 +49,7 @@ sudo "$compiler" -x c -o "$wrapper_dest" - << 'EOF'
 #include <unistd.h>
 int main() {
     // Set real UID/GID to root so bash doesn't drop setuid privileges on exec
-    setuid(0);
-    setgid(0);
+    if (setuid(0) != 0 || setgid(0) != 0) return 1;
     return execl("/usr/local/bin/pull_claude_governance.sh", "pull_claude_governance.sh", NULL);
 }
 EOF
