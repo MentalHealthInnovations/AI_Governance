@@ -1,28 +1,33 @@
 {
-  "defaultMode": "auto",
-  "disableBypassPermissionsMode": true,
-
+  "allowedChannelPlugins": [],
+  "allowedHttpHookUrls": [],
+  "allowedMcpServers": [],
   "allowManagedHooksOnly": true,
-
   "allowManagedMcpServersOnly": true,
-  "mcpServers": {
-    "github": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"]
-    },
-    "jira": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@example/jira-mcp"]
-    }
-  },
-  "allowedMcpServers": [
-    "github",
-    "jira"
-  ],
+  "allowManagedPermissionRulesOnly": true,
+  "alwaysThinkingEnabled": false,
+  "channelsEnabled": false,
+  "companyAnnouncements": ["You must read and adhere to the MHI Use of Artificial Intelligence policy at https://mentalhealthinnovations.atlassian.net/wiki/spaces/MPSC/pages/4485349381/MHI+Use+of+Artificial+Intelligence. See technical controls at https://github.com/MentalHealthInnovations/AI_Governance"],
+  "disableAutoMode": "disable",
+  "disableDeepLinkRegistration": "disable",
+  "disableSkillShellExecution": true,
+  "enabledMcpjsonServers": [],
+  "feedbackSurveyRate": 0,
+  "forceLoginMethod": "claudeai",
+  "forceRemoteSettingsRefresh": true,
+  "strictKnownMarketplaces": [],
+
+  "autoConnectIde": false,
+  "autoInstallIdeExtension": true,
+  "editorMode": "normal",
+  "externalEditorContext": true,
+  "showTurnDuration": true,
+  "terminalProgressBarEnabled": true,
 
   "permissions": {
+    "additionalDirectories": [],
+    "defaultMode": "plan",
+    "disableBypassPermissionsMode": "disable",
     "deny": [
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
@@ -35,12 +40,29 @@
       "Read(~/.kube/config)",
       "Read(~/.terraform.d/**)",
       "Read(~/.vault-token)",
+      "Read(~/.config/gh/hosts.yml)",
+      "Read(~/.pypirc)",
+      "Read(~/.gem/credentials)",
+      "Read(~/.cargo/credentials)",
+      "Read(~/.config/op/**)",
 
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./**/.env)",
       "Read(./**/.env.*)",
       "Read(./secrets/**)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/*.p12)",
+      "Read(./**/*.pfx)",
+      "Read(./**/*.jks)",
+      "Read(./**/id_rsa)",
+      "Read(./**/id_ecdsa)",
+      "Read(./**/id_ed25519)",
+      "Read(./**/*_rsa)",
+      "Read(./**/*credentials*)",
+      "Read(./**/*secret*)",
+      "Read(./**/*token*)",
 
       "Read(/etc/passwd)",
       "Read(/etc/shadow)",
@@ -50,79 +72,38 @@
       "Edit(./**/.env)",
       "Edit(./**/.env.*)",
       "Edit(./secrets/**)",
+      "Edit(./**/*.pem)",
+      "Edit(./**/*.key)",
+      "Edit(./**/*.p12)",
+      "Edit(./**/*.pfx)",
+      "Edit(./**/*.jks)",
+      "Edit(./**/id_rsa)",
+      "Edit(./**/id_ecdsa)",
+      "Edit(./**/id_ed25519)",
+      "Edit(./**/*_rsa)",
+      "Edit(./**/*credentials*)",
+      "Edit(./**/*secret*)",
+      "Edit(./**/*token*)",
 
-      "Edit(./.git/**)",
+      "Edit(./.git/hooks/**)",
+      "Edit(./.git/config)",
+      "Edit(./.git/HEAD)",
+      "Edit(./.git/ORIG_HEAD)",
+      "Edit(./.git/packed-refs)",
       "Edit(./.husky/**)",
+      "Edit(/Library/Application Support/ClaudeCode)",
 
-      "Bash(curl *)",
-      "Bash(wget *)",
-      "Bash(nc *)",
-      "Bash(netcat *)",
-      "Bash(ncat *)",
-      "Bash(socat *)",
-
-      "Bash(sudo *)",
-      "Bash(su *)",
-
-      "Bash(rm -rf *)",
-      "Bash(git push --force*)",
-
-      "Bash(*|bash*)",
-      "Bash(*|sh*)",
-      "Bash(*|zsh*)",
-      "Bash(*|fish*)",
-      "Bash(*| python*)",
-      "Bash(*| node*)",
-      "Bash(eval *)",
-      "Bash(xargs *)"
-    ],
-
-    "ask": [
-      "Bash(git push *)",
-      "Bash(gh pr create*)",
-      "Bash(gh pr merge*)",
-      "Bash(npm install *)",
-      "Bash(pnpm add *)",
-      "Bash(yarn add *)",
-      "Bash(pip install *)",
-      "Bash(poetry add *)",
-      "Bash(go get *)",
-      "Bash(cargo add *)",
-      "Bash(docker build *)",
-      "Bash(docker run *)"
-    ],
-
-    "allow": [
-      "Bash(git status*)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git branch*)",
-      "Bash(git checkout -b *)",
-
-      "Bash(gh pr view*)",
-      "Bash(gh issue view*)",
-      "Bash(gh repo view*)",
-
-      "Bash(npm test*)",
-      "Bash(npm run test*)",
-      "Bash(npm run lint*)",
-      "Bash(npm run typecheck*)",
-
-      "Bash(pnpm test*)",
-      "Bash(pnpm lint*)",
-
-      "Bash(pytest*)",
-      "Bash(ruff check*)",
-      "Bash(mypy*)",
-      "Bash(go test*)",
-      "Bash(cargo test*)"
+      "WebSearch(*)"
     ]
   },
 
   "sandbox": {
     "enabled": true,
-    "failIfUnavailable": true,
+    "enableWeakerNestedSandbox": false,
+    "enableWeakerNetworkIsolation": false,
+    "ignoreViolations": {},
     "autoAllowBashIfSandboxed": false,
+    "excludedCommands": [],
     "allowUnsandboxedCommands": false,
 
     "filesystem": {
@@ -134,7 +115,15 @@
         "./tmp",
         "./build",
         "./dist",
-        "./coverage"
+        "./coverage",
+        "./.git/refs/**",
+        "./.git/objects/**",
+        "./.git/logs/**",
+        "./.git/COMMIT_EDITMSG",
+        "./.git/MERGE_MSG",
+        "./.git/MERGE_HEAD",
+        "./.git/index",
+        "./.git/FETCH_HEAD"
       ],
       "denyRead": [
         "~/.ssh",
@@ -148,18 +137,37 @@
         "~/.kube",
         "~/.terraform.d",
         "~/.vault-token",
-        "~/Library/Keychains"
+        "~/Library/Keychains",
+        "~/.config/gh",
+        "~/.pypirc",
+        "~/.gem",
+        "~/.cargo/credentials",
+        "~/.config/op"
       ],
       "denyWrite": [
         "/etc",
         "/usr/local/bin",
         "~/.ssh",
-        "~/.gnupg"
+        "~/.aws",
+        "~/.azure",
+        "~/.config/gcloud",
+        "~/.gnupg",
+        "~/.npmrc",
+        "~/.netrc",
+        "~/.docker",
+        "~/.kube",
+        "~/.terraform.d",
+        "~/.vault-token",
+        "~/Library/Keychains"
       ],
       "allowManagedReadPathsOnly": true
     },
 
     "network": {
+      "_comment_allowedDomains": "SYNC REQUIRED — this list and ALLOWED_DOMAINS in webfetch-policy-check.sh enforce the same boundary at different layers (OS sandbox vs hook) and must be kept identical. When adding or removing a domain here, make the same change in that file. Path-scoped entries (e.g. code.claude.com/docs) are only supported in the hook — list only the bare hostname here.",
+      "allowUnixSockets": [],
+      "allowAllUnixSockets": false,
+      "allowLocalBinding": false,
       "allowedDomains": [
         "github.com",
         "api.github.com",
@@ -173,11 +181,13 @@
         "index.crates.io",
         "registry-1.docker.io",
         "auth.docker.io",
-        "production.cloudflare.docker.com"
+        "production.cloudflare.docker.com",
+        "mentalhealthinnovations.org",
+        "themix.org.uk",
+        "giveusashout.org",
+        "code.claude.com"
       ],
-      "allowManagedDomainsOnly": true,
-      "allowLocalBinding": false,
-      "allowAllUnixSockets": false
+      "allowManagedDomainsOnly": true
     }
   },
 
@@ -193,11 +203,22 @@
         ]
       },
       {
-        "matcher": "Read",
+        "matcher": "WebFetch",
         "hooks": [
           {
             "type": "command",
-            "command": "/opt/claude/hooks/cc-redact-wrapper.sh"
+            "command": "/opt/claude/hooks/webfetch-policy-check.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Read|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/claude/hooks/output-redact.sh"
           }
         ]
       }

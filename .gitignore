@@ -1,0 +1,7 @@
+# Claude Code session artefacts
+.claude/commit_msg.txt
+tmp/
+
+# Hook audit logs (machine-local, never committed)
+.claude/debug/
+.claude/tmp/
