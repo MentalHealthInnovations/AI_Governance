@@ -64,6 +64,7 @@ fi
 # Catches: sh, bash, zsh, fish, dash, ksh, csh, tcsh, python, python3, perl, ruby, node,
 #          nodejs, php, lua, exec. The \b word-boundary prevents matching branch names like
 #          "fish-fix" or arguments that contain these strings.
+# shellcheck disable=SC2016  # single-quoted regex: $ is a literal char, not a variable
 if printf '%s' "$stripped_cmd" | grep -Eqi '(^|[|;&`$( ])(sh|bash|zsh|fish|dash|ksh|csh|tcsh|python3?|perl|ruby|node(js)?|php|lua|exec)\b'; then
   logtofile "DENY shell invocation: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Shell or interpreter invocation blocked by policy"}}'
