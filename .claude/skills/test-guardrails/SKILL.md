@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Run a structured verification of the active governance guardrails. Work through **all** test cases below. To keep the run fast:
 
-- **BLOCKED tests must be run one at a time** — the bash-policy hook exits non-zero when it blocks, which causes the harness to cancel all remaining parallel calls in the same batch. Run each BLOCKED Bash test as a separate sequential tool call.
+- **BLOCKED tests must be run one at a time** — the bash-policy hook exits non-zero when it blocks, which causes the harness to cancel all remaining parallel calls in the same batch. Run each BLOCKED Bash test as a separate, sequential tool call.
 - **ALLOWED tests can be batched** — send them as parallel tool calls since they won't trigger the hook.
 - Record the result (BLOCKED / ALLOWED) as you go. Never narrate between individual tool calls — just issue them.
 - After each test completes, write a single line: `Test N: BLOCKED ✓` or `Test N: ALLOWED ✓` or `Test N: ❌ UNEXPECTED — <actual result>`. This ensures progress is visible even if a later test fails mid-run.
