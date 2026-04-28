@@ -131,6 +131,10 @@ redact_pattern "KEY_ASSIGNMENT" \
 redact_pattern "SSH_KEY_MATERIAL" \
   'AAAA[A-Za-z0-9+\/]{40,}={0,2}'
 
+# Google API key
+redact_pattern "GOOGLE_API_KEY" \
+  'AIza[a-zA-Z0-9\-_\\]{35}'
+
 # ── Emit result ───────────────────────────────────────────────────────────────
 
 if [[ "$found" -eq 0 ]]; then
