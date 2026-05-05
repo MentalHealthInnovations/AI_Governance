@@ -27,7 +27,7 @@ if ! xcode-select -p &> /dev/null ; then
     echo "Could not determine CLT package name" >&2
     exit 1
   fi
-  softwareupdate -i "$PROD" --verbose
+  sudo softwareupdate -i "$PROD" --verbose
 else
   echo "Command Line Tools for Xcode are already installed."
 fi
