@@ -12,6 +12,26 @@
 
 set -e
 
+if ! xcode-select -p &> /dev/null ; then
+  echo "Command Line Tools for Xcode not found. Installing from softwareupdate…"
+  # This temporary file prompts the 'softwareupdate' utility to list the Command Line Tools
+  SENTINEL=/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+  touch "$SENTINEL"
+  trap 'rm -f "$SENTINEL"' EXIT
+  PROD=$(softwareupdate -l 2>/dev/null \
+    | awk -F'*' '/^ *\*.*Command Line/ {print $2}' \
+    | sed -E 's/^ *(Label: )?//' \
+    | sort -V \
+    | tail -n 1)
+  if [[ -z "$PROD" ]]; then
+    echo "Could not determine CLT package name" >&2
+    exit 1
+  fi
+  softwareupdate -i "$PROD" --verbose
+else
+  echo "Command Line Tools for Xcode are already installed."
+fi
+
 script_dest="/usr/local/bin/pull_claude_governance.sh"
 ai_governance_repo_dir="/tmp/AI_Governance"
 
