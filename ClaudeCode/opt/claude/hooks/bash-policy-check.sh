@@ -15,16 +15,10 @@ if [[ -z "$cmd" ]]; then
   exit 0
 fi
 
-separators=$(printf '%s' "$cmd" | grep -oE '(\&\&|;|\|\||\|)' | wc -l | tr -d ' ')
-if [[ "${separators:-0}" -gt 2 ]]; then
-  logtofile "DENY excessive chaining ($separators separators): $cmd"
-  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Command chaining exceeds policy threshold"}}'
-  exit 0
-fi
-
 # strip_quoted_strings removes everything inside "..." or '...' (including multi-line values)
-# so that words like "exec" in a commit message body don't trigger false positives.
-# The full $cmd is still used where quoted values must be inspected (e.g. --exec="curl ...").
+# so that words like "exec" in a commit message body — or regex alternation operators like
+# `grep "a\|b\|c"` — don't trigger false positives. The full $cmd is still used where
+# quoted values must be inspected (e.g. --exec="curl ...").
 strip_quoted_strings() {
   local full_command="$1"
   local result="" current_char="" open_quote=""
@@ -47,6 +41,15 @@ strip_quoted_strings() {
 }
 stripped_cmd="$(strip_quoted_strings "$cmd")"
 
+# Count chain operators outside quoted strings only. Operators inside quotes are literal
+# argument text (e.g. a grep regex), not shell-level chaining, so they must not count.
+separators=$(printf '%s' "$stripped_cmd" | grep -oE '(\&\&|;|\|\||\|)' | wc -l | tr -d ' ')
+if [[ "${separators:-0}" -gt 2 ]]; then
+  logtofile "DENY excessive chaining ($separators separators): $cmd"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Command chaining exceeds policy threshold"}}'
+  exit 0
+fi
+
 if printf '%s' "$stripped_cmd" | grep -Eqi '(^|\s)(sudo|su)(\s|$)'; then
   logtofile "DENY sudo/su: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Privilege escalation (sudo/su) blocked by policy"}}'
@@ -62,10 +65,10 @@ fi
 # Match shell/interpreter invocation as a command token, not as a substring.
 # Anchors: start of string, after pipe (|), after semicolon, after &&/||, or after backtick.
 # Catches: sh, bash, zsh, fish, dash, ksh, csh, tcsh, python, python3, perl, ruby, node,
-#          nodejs, php, lua, exec. The \b word-boundary prevents matching branch names like
-#          "fish-fix" or arguments that contain these strings.
+#          nodejs, php, lua, exec, eval. The \b word-boundary prevents matching branch names
+#          like "fish-fix" or arguments that contain these strings.
 # shellcheck disable=SC2016  # single-quoted regex: $ is a literal char, not a variable
-if printf '%s' "$stripped_cmd" | grep -Eqi '(^|[|;&`$( ])(sh|bash|zsh|fish|dash|ksh|csh|tcsh|python3?|perl|ruby|node(js)?|php|lua|exec)\b'; then
+if printf '%s' "$stripped_cmd" | grep -Eqi '(^|[|;&`$( ])(sh|bash|zsh|fish|dash|ksh|csh|tcsh|python3?|perl|ruby|node(js)?|php|lua|exec|eval)\b'; then
   logtofile "DENY shell invocation: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Shell or interpreter invocation blocked by policy"}}'
   exit 0
@@ -93,7 +96,7 @@ fi
 # preceded by "-", which is not in the anchor character class used on line 72.
 # Block it explicitly before reaching the allowlist so that "^find\b" cannot
 # be used to launder arbitrary subprocess execution.
-if printf '%s' "$cmd" | grep -Eqi '^find\b.*[[:space:]]-execdir?\b'; then
+if printf '%s' "$cmd" | grep -Eqi '^find\b.*[[:space:]]-exec(dir)?\b'; then
   logtofile "DENY find -exec: $cmd"
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"find -exec/-execdir blocked by policy"}}'
   exit 0
@@ -213,13 +216,16 @@ segment_allowed() {
   return 1
 }
 
-# Split on &&, ||, ;, | (all chain operators) using sed to normalise to newlines
+# Split on &&, ||, ;, | (all chain operators) using sed to normalise to newlines.
+# Split the quote-stripped command so that operators inside quotes (e.g. a grep regex
+# `"a\|b\|c"`) are not treated as segment boundaries. The allowlist only needs to see
+# each segment's leading verb, which lives outside any quoted argument.
 while IFS= read -r segment; do
   if ! segment_allowed "$segment"; then
     logtofile "DENY segment not in allowlist: '$segment' (full cmd: $cmd)"
     echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Command not in policy allowlist"}}'
     exit 0
   fi
-done < <(printf '%s' "$cmd" | sed 's/&&/\n/g; s/||/\n/g; s/;/\n/g; s/|/\n/g')
+done < <(printf '%s' "$stripped_cmd" | sed 's/&&/\n/g; s/||/\n/g; s/;/\n/g; s/|/\n/g')
 
 echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
