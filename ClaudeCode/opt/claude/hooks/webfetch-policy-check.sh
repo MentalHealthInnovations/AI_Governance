@@ -55,6 +55,7 @@ allowed_entries=(
   "themix.org.uk"
   "giveusashout.org"
   "code.claude.com/docs"
+  "www.twilio.com"
 )
 
 path="$(printf '%s' "$url" | sed -E 's|^[^:]+://[^/]*(/.*)$|\1|')"
