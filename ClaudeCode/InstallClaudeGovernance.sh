@@ -73,7 +73,7 @@ int main() {
     return execl("/usr/local/bin/pull_claude_governance.sh", "pull_claude_governance.sh", NULL);
 }
 EOF
-sudo chown root "$wrapper_dest"
+sudo chown root:staff "$wrapper_dest"
 # 4750 (setuid, rwx for owner, rx for group, none for others) restricts execution
 # to members of the "staff" group rather than every local user (4755 = world-executable).
 # This reduces the privilege-escalation surface: only users already in the group
