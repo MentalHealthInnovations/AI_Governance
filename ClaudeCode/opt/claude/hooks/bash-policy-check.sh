@@ -139,6 +139,7 @@ allowed_patterns=(
   "\bjq\b"
   "\btee\b"
   "\bprintf\b"
+  "\bshellcheck\b"
 
   # basic commands - anchored because they modify filesystem/env.
   # Not matched as bare \bword\b tokens because they must be the leading command,
