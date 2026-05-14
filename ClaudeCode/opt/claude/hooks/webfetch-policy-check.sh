@@ -57,6 +57,7 @@ allowed_entries=(
   "code.claude.com/docs"
   "www.twilio.com"
   "learn.jamf.com"
+  "community.jamf.com"
 )
 
 path="$(printf '%s' "$url" | sed -E 's|^[^:]+://[^/]*(/.*)$|\1|')"
