@@ -1,7 +1,13 @@
 {
   "allowedChannelPlugins": [],
   "allowedHttpHookUrls": [],
-  "allowedMcpServers": [],
+  "allowedMcpServers": ["atlassian"],
+  "mcpServers": {
+    "atlassian": {
+      "type": "sse",
+      "url": "https://mcp.atlassian.com/v1/sse"
+    }
+  },
   "allowManagedHooksOnly": true,
   "allowManagedMcpServersOnly": true,
   "allowManagedPermissionRulesOnly": true,
@@ -194,7 +200,11 @@
         "code.claude.com",
         "www.twilio.com",
         "learn.jamf.com",
-        "community.jamf.com"
+        "community.jamf.com",
+        "mcp.atlassian.com",
+        "support.atlassian.com",
+        "developer.atlassian.com",
+        "community.atlassian.com"
       ],
       "allowManagedDomainsOnly": true
     }
