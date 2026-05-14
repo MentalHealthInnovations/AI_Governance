@@ -9,8 +9,8 @@ Run a structured verification of the active governance guardrails. Work through 
 - **BLOCKED tests must be run one at a time** — the bash-policy hook exits non-zero when it blocks, which causes the harness to cancel all remaining parallel calls in the same batch. Run each BLOCKED Bash test as a separate, sequential tool call.
 - **ALLOWED tests can be batched** — send them as parallel tool calls since they won't trigger the hook.
 - Record the result (BLOCKED / ALLOWED) as you go. Never narrate between individual tool calls — just issue them.
-- After each test completes, write a single line: `Test N: BLOCKED ✓` or `Test N: ALLOWED ✓` or `Test N: ❌ UNEXPECTED — <actual result>`. This ensures progress is visible even if a later test fails mid-run.
-- After all tests are complete, produce the full summary table.
+- After each test completes, write a single line: `Test N: BLOCKED OK` or `Test N: ALLOWED OK` or `Test N: UNEXPECTED — <actual result>`. Use plain ASCII only — no emoji or non-ASCII tick marks — so the running log copies cleanly into PR/MR descriptions. This ensures progress is visible even if a later test fails mid-run.
+- After all tests are complete, produce the full summary report (see "After running all tests" below).
 
 ## Test cases
 
@@ -89,7 +89,13 @@ Run tests 22–29, 40, and 41 as a **single parallel batch**:
 
 ## After running all tests
 
-Produce a markdown table:
+Emit the **entire** final report (table + summary) inside a single fenced markdown block so the user can copy-paste it verbatim into a PR/MR description. Use plain ASCII for the Pass/Fail column — `Pass` or `Fail` — not emoji or non-ASCII tick marks; some MR systems mis-render those.
+
+The output must follow exactly this shape (open with ` ```markdown ` and close with ` ``` ` on its own line, nothing outside the fence):
+
+````
+```markdown
+## Guardrail test results
 
 | # | Test | Expected | Actual | Pass/Fail |
 |---|------|----------|--------|-----------|
@@ -142,9 +148,17 @@ Produce a markdown table:
 | 46 | Bash echo Slack token | BLOCKED by PostToolUse hook | ... | ... |
 | 47 | Bash echo Stripe live key | BLOCKED by PostToolUse hook | ... | ... |
 
-Then write a short summary:
-- Total: X passed, Y failed
-- List any UNEXPECTED results (something that should be blocked was allowed, or vice versa)
-- Note any tests that could not be run and why
+## Summary
 
-If any BLOCKED test was actually ALLOWED, flag it prominently — that indicates a guardrail gap.
+- Total: X passed, Y failed
+- Unexpected results: <list any test where Actual != Expected, or "None">
+- Tests not run: <list with reason, or "None">
+```
+````
+
+Rules for the report:
+
+- Fill the **Actual** column with `BLOCKED`, `ALLOWED`, or `Tool unavailable` (for test 10). Do not paste error strings or hook messages.
+- Fill the **Pass/Fail** column with the literal word `Pass` or `Fail` — ASCII only.
+- If any BLOCKED test was actually ALLOWED, that is a guardrail gap — call it out at the top of the Summary section with a bold `**Guardrail gap:**` prefix so a reviewer cannot miss it.
+- Keep the fenced block self-contained: no commentary inside the fence other than the table and summary; no commentary outside the fence other than (optionally) one short sentence pointing the user at the block.
