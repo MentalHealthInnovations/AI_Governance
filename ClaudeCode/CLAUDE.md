@@ -24,3 +24,10 @@ Managed environment with org-wide security controls. Follow these rules without 
 ## When blocked
 
 State the restriction plainly, use redacted or non-sensitive alternatives where available, and propose a minimal safe path forward.
+
+## Git commits
+
+- Use `git commit -m "type(scope): description"` with a plain double-quoted string passed directly on the command line.
+- Do **not** write the message to a file and pass `-F`, do **not** use heredocs (`<<'EOF'`), and do **not** use `$(cat ...)` or other command substitution. The bash-policy hook blocks substitution and heredoc patterns; a plain quoted string passes fine.
+- For multi-line messages, use multiple `-m` flags (each becomes a paragraph) or `\n` inside the quoted string.
+- Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): `type(scope): description`. Common types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `ci`. Include a scope when it adds clarity (e.g. `feat(guardrails):`, `fix(hook):`).
