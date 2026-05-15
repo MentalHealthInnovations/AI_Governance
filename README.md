@@ -15,6 +15,7 @@ A layered configuration system that makes Claude Code safer to use at scale. The
 | `ClaudeCode/pull_claude_governance.sh` | Pulls and deploys policy files; self-updates each run |
 | `ClaudeCode/InstallClaudeGovernance.sh` | One-time macOS bootstrap for `pull_claude_governance.sh` |
 | `.claude/skills/test-guardrails/SKILL.md` | `/test-guardrails` verification suite |
+| `.claude/skills/add-mcp-server/SKILL.md` | `/add-mcp-server` skill for proposing a new MCP server |
 
 ## Installation
 
@@ -40,8 +41,16 @@ Claude Code uses a four-layer configuration system; higher layers take precedenc
 - **Network** — egress restricted to an allowlist; generic download/exfiltration tools blocked.
 - **Filesystem** — safe working dirs allowed; `.env`, `secrets/`, SSH keys, cloud creds, and system paths blocked.
 - **GitHub** — read operations mostly allowlisted; PR creation/merge requires approval; history-rewriting flags blocked.
-- **MCP servers** — locked to the managed allowlist. New servers go through the same PR process as new domains.
+- **MCP servers** — locked to the managed allowlist. New servers go through the same PR process as new domains. To propose one, run `/add-mcp-server`.
 - **Skills** — `disableSkillShellExecution: true` prevents skill scripts from shelling out directly, forcing them through the hook-policed tool pathway.
+
+### Approved MCP servers
+
+| Server | Runtime | Auth | Docs |
+|---|---|---|---|
+| `github` | Remote HTTP (`https://api.githubcopilot.com/mcp/`) | OAuth (per-user, device flow at first connect) | https://github.com/github/github-mcp-server |
+
+`managed-settings.json` registers each server's endpoint. The first time Claude Code opens the `github` MCP server, it prompts an OAuth device flow against the engineer's own GitHub account — no shared org token, every action attributable. The OAuth grant is stored per machine; revoke at https://github.com/settings/applications. There is no local container and no `GITHUB_PERSONAL_ACCESS_TOKEN` to manage (those instructions are for the legacy local-Docker mode this repo does not use). If `claude mcp list` does not show `github`, run `update_ai_governance` and retry.
 
 ## Hooks
 

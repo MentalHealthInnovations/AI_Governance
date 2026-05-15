@@ -58,6 +58,9 @@ allowed_entries=(
   "www.twilio.com"
   "learn.jamf.com"
   "community.jamf.com"
+  "docs.github.com"
+  "modelcontextprotocol.io"
+  "api.githubcopilot.com"
 )
 
 path="$(printf '%s' "$url" | sed -E 's|^[^:]+://[^/]*(/.*)$|\1|')"
