@@ -41,6 +41,7 @@ Claude Code uses a four-layer configuration system; higher layers take precedenc
 - **Filesystem** — safe working dirs allowed; `.env`, `secrets/`, SSH keys, cloud creds, and system paths blocked.
 - **GitHub** — read operations mostly allowlisted; PR creation/merge requires approval; history-rewriting flags blocked.
 - **MCP servers** — locked to the managed allowlist. New servers go through the same PR process as new domains.
+    - Atlassian server: SSE (`https://mcp.atlassian.com/v1/sse`), per-user OAuth, read and update Jira issues and Confluence pages on behalf of the signed-in engineer
 - **Skills** — `disableSkillShellExecution: true` prevents skill scripts from shelling out directly, forcing them through the hook-policed tool pathway.
 
 ## Hooks
@@ -54,6 +55,83 @@ Hooks are deployed to `/opt/claude/hooks/` and must be present before Claude Cod
 ### Audit logs
 
 Each hook writes to `~/.claude/debug/` on block or redact (allowed operations produce no entry). Each line includes the working directory at the time of the call.
+
+## MCP servers — operational notes
+
+This section covers how engineers actually use the MCP servers listed in [Control surfaces → MCP servers](#mcp-servers). The control pack defines *which* servers are permitted; this section explains how each one is authenticated and used.
+
+### Atlassian Remote MCP server
+
+**What it does.** Lets Claude Code read and update Jira issues and Confluence pages — fetch a ticket, post a comment, transition a status, summarise a Confluence page. Useful for ticket triage, drafting comments from local code context, and pulling acceptance criteria into a working session.
+
+**Endpoint.** `https://mcp.atlassian.com/v1/sse` (SSE transport). Hosted by Atlassian — no local install, no API token, no env var required on the engineer's machine.
+
+**Authentication model — per user, not global.** The Atlassian Remote MCP uses OAuth 2.1 and authenticates each engineer individually:
+
+- On first use, Claude Code opens a browser. The engineer signs in with their MHI Atlassian account and grants scopes.
+- Atlassian issues a per-user token bound to that engineer's identity and stored locally by Claude Code.
+- Every action runs **as that engineer**, so existing Atlassian permissions, project access, and audit logs apply unchanged.
+
+There is intentionally no shared admin token that could be configured once for the whole org. A shared token would break the audit trail (every action would appear as a service account) and would grant every Claude Code user the union of all permissions. Atlassian does not support that mode.
+
+> **One-time org admin step (verify before broad rollout):** an Atlassian org admin may need to confirm the Remote MCP / Rovo feature is enabled at the org level in the Atlassian admin console before individual users can connect. On some Atlassian plans this is on by default; on plans with stricter defaults an admin must allow it. This needs to be confirmed against the current Atlassian admin documentation before this PR is marked ready for review. Contact max.levine@mhiuk.org or edward@mhiuk.org — they hold the Atlassian admin role.
+
+### First-use setup (per engineer)
+
+1. Open Claude Code in any working directory.
+2. At the prompt, type `/mcp`. The `atlassian` server should be listed with status `disconnected`.
+3. Select `atlassian` and choose `Connect`. Claude Code opens your browser to Atlassian.
+4. Sign in with your MHI Atlassian account.
+5. Review the requested scopes carefully. Grant only the scopes you need for your work — you can re-grant later if more are needed.
+6. Return to Claude Code. `/mcp` should now show `atlassian` as `connected`.
+
+You only need to do this once per machine. The token is stored locally by Claude Code and refreshed automatically by Atlassian.
+
+### Scope guidance
+
+When the OAuth consent screen asks for scopes:
+
+- **Grant:** read access to Jira issues and Confluence pages — required for the common case (ticket lookup, page summarisation).
+- **Grant only if you need it:** write access (creating issues, posting comments, transitioning status, editing pages). If your work is read-only, do not grant write scopes.
+- **Do not grant:** admin scopes (user management, project administration) — Claude Code does not need these and they significantly increase blast radius if a prompt injection drives Claude into unintended actions.
+
+### Revocation
+
+To revoke Claude Code's access to your Atlassian account:
+
+1. Sign in to <https://id.atlassian.com>.
+2. Go to **Account settings → Connected apps** (or **Authorized apps**, depending on UI version).
+3. Find the Claude Code / Anthropic entry and click **Revoke access**.
+
+The next `/mcp` connection attempt will require re-consent.
+
+### Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `/mcp` shows `atlassian` as `disconnected` and `Connect` does nothing | Browser handler not registered, or the Atlassian login page is blocked by a corporate proxy | Try again from a network that can reach `id.atlassian.com` and `mcp.atlassian.com`; if your browser does not auto-open, copy the URL from the Claude Code log |
+| `Connect` opens the browser but the page is blank or shows an Atlassian error | Org-level Remote MCP / Rovo not enabled, or your Atlassian account does not have access to the requested product | Contact an Atlassian admin (max.levine@mhiuk.org / edward@mhiuk.org) to confirm the feature is enabled and your account is provisioned |
+| `mcp__atlassian__*` tool calls fail with `403` or `401` after a successful connect | OAuth scope mismatch — the action requires a scope you did not grant | Disconnect via `/mcp`, reconnect, and grant the missing scope on the consent screen |
+| `mcp.atlassian.com` requests blocked at the network layer | Hook or sandbox not yet updated on this machine | Run `update_ai_governance` and retry; confirm `mcp.atlassian.com` is in the deployed `managed-settings.json` `network.allowedDomains` |
+
+### Audit and visibility
+
+All Jira and Confluence actions made through this MCP appear in Atlassian's standard audit log, attributed to the signed-in engineer. There is no separate Claude Code audit log on the Atlassian side. On the Claude Code side, MCP tool calls appear in the conversation transcript as `mcp__atlassian__<toolname>` entries.
+
+## Operating model
+
+Start with a small set of strong deny rules and a useful set of low-risk allow rules.
+
+Use approval and denial telemetry to tune the middle layer over time:
+- Promote repetitive safe asks into allow.
+- Keep hard deny rules small, stable, and explicit.
+- Avoid creating so many prompts that users stop reading them carefully.
+
+## Monitoring and alerting
+
+### Hook audit logs
+
+Each hook writes to a local log file when it blocks or allows an operation:
 
 | Hook | Log path |
 |---|---|
