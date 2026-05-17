@@ -123,7 +123,13 @@
         "./.git/MERGE_MSG",
         "./.git/MERGE_HEAD",
         "./.git/index",
-        "./.git/FETCH_HEAD"
+        "./.git/index.lock",
+        "./.git/HEAD",
+        "./.git/HEAD.lock",
+        "./.git/ORIG_HEAD",
+        "./.git/FETCH_HEAD",
+        "./.git/packed-refs",
+        "./.git/packed-refs.lock"
       ],
       "denyRead": [
         "~/.ssh",
