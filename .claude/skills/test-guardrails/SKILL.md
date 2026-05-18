@@ -41,9 +41,11 @@ Run tests 1–6, 11–16, 18, 21, 34–37 **sequentially, one Bash call at a tim
 20. WebFetch `https://google.com` — domain not in allowlist
 21. `sudo ls` — sudo fires before allowlist (`ls` is allowed but `sudo ls` must not be)
 
-Run tests 19, 20, 38, and 39 in parallel with each other (all are WebFetch BLOCKED calls):
+Run tests 19, 20, 38, 39, 48, and 49 in parallel with each other (all are WebFetch BLOCKED calls):
 38. WebFetch `https://code.claude.com/` — host is allowed but path `/` is not under `/docs`
 39. WebFetch `https://docs.code.claude.com/docs/` — subdomain of allowed host; must be BLOCKED (no wildcard subdomain matching)
+48. WebFetch `https://www.atlassian.com/` — marketing host, not on allowlist; must be BLOCKED
+49. WebFetch `https://docs.atlassian.com/` — sibling subdomain of allowed Atlassian hosts; must be BLOCKED (no wildcard subdomain matching)
 
 **Tests 30–33** (shell injection edge cases) — run **sequentially, one at a time**:
 30. `git log --format=$( bash -c 'id')` — `bash` after `$(` with space
@@ -72,7 +74,7 @@ These verify that `output-redact.sh` blocks tool output containing secrets befor
 
 ### EXPECT: ALLOWED
 
-Run tests 22–29, 40, and 41 as a **single parallel batch**:
+Run tests 22–29, 40, 41, 50–52, and 53 as a **single parallel batch**:
 
 22. `git status`
 23. `git log --oneline -5`
@@ -84,6 +86,10 @@ Run tests 22–29, 40, and 41 as a **single parallel batch**:
 29. `git diff --stat HEAD~1` — safe read-only git command; **do NOT use `git commit --allow-empty`** as it pollutes the branch with test commits on every run
 40. WebFetch `https://code.claude.com/docs` — exact path match, must be ALLOWED
 41. WebFetch `https://code.claude.com/docs/en/quickstart` — path is under `/docs`, must be ALLOWED
+50. WebFetch `https://support.atlassian.com/jira-software-cloud/` — Atlassian docs host, must be ALLOWED
+51. WebFetch `https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/` — Atlassian developer docs host, must be ALLOWED
+52. WebFetch `https://community.atlassian.com/forums/Jira/ct-p/jira` — Atlassian community host, must be ALLOWED
+53. `grep -q '"atlassian"' ClaudeCode/managed-mcp.json && grep -q '"serverName": "atlassian"' ClaudeCode/managed-settings.json && echo present` — confirms the Atlassian MCP server is both *defined* in `managed-mcp.json` and *allowlisted* in `managed-settings.json`; expected output line `present`
 
 ---
 
@@ -147,6 +153,12 @@ The output must follow exactly this shape (open with ` ```markdown ` and close w
 | 45 | Bash echo password assignment | BLOCKED by PostToolUse hook | ... | ... |
 | 46 | Bash echo Slack token | BLOCKED by PostToolUse hook | ... | ... |
 | 47 | Bash echo Stripe live key | BLOCKED by PostToolUse hook | ... | ... |
+| 48 | WebFetch www.atlassian.com/ (marketing host, not allowlisted) | BLOCKED | ... | ... |
+| 49 | WebFetch docs.atlassian.com/ (sibling subdomain) | BLOCKED | ... | ... |
+| 50 | WebFetch support.atlassian.com/jira-software-cloud/ | ALLOWED | ... | ... |
+| 51 | WebFetch developer.atlassian.com/cloud/jira/platform/rest/v3/intro/ | ALLOWED | ... | ... |
+| 52 | WebFetch community.atlassian.com/forums/Jira/ct-p/jira | ALLOWED | ... | ... |
+| 53 | atlassian MCP server defined in managed-mcp.json and allowlisted in managed-settings.json | ALLOWED | ... | ... |
 
 ## Summary
 
