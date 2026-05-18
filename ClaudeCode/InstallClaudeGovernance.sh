@@ -9,8 +9,19 @@
 #   3. Install /usr/local/bin/update_ai_governance, a setuid binary that allows any local
 #      user to trigger a policy update without root access by running: update_ai_governance
 #   4. Schedule a daily cron job (root crontab, 12:00) to keep policies up to date.
+#
+# Usage:
+#   sudo ./InstallClaudeGovernance.sh              # bootstrap from main (production default)
+#   sudo ./InstallClaudeGovernance.sh feat/branch  # bootstrap from a branch/tag/SHA for local testing
+#
+# The ref argument only affects the one-shot bootstrap deploy below. The installed
+# pull_claude_governance.sh and the daily cron always pull main, and the setuid wrapper
+# update_ai_governance accepts no arguments — so non-root users on this machine cannot
+# switch the active policy branch after install.
 
 set -e
+
+ref="${1:-main}"
 
 if ! xcode-select -p &> /dev/null ; then
   echo "Command Line Tools for Xcode not found. Installing from softwareupdate…"
@@ -40,21 +51,48 @@ echo "Starting to pull Claude governance files."
 # Bootstrap: clone the repo, copy pull_claude_governance.sh to /usr/local/bin/, then execute it.
 # After this first install, pull_claude_governance.sh self-updates on every subsequent run —
 # changes to it deploy automatically via the daily cron without requiring this script to be re-run.
-echo "Cloning AI_Governance repository..."
+echo "Cloning AI_Governance repository at ref '$ref'..."
 rm -rf "$ai_governance_repo_dir"
-git clone --quiet --depth 1 https://github.com/MentalHealthInnovations/AI_Governance "$ai_governance_repo_dir"
+# Verify the ref exists on the remote before cloning so a typo aborts here
+# rather than after we have already started touching policy files.
+remote_url="https://github.com/MentalHealthInnovations/AI_Governance"
+if ! git ls-remote --exit-code "$remote_url" "$ref" >/dev/null 2>&1 \
+  && ! git ls-remote --exit-code "$remote_url" "refs/heads/$ref" >/dev/null 2>&1 \
+  && ! git ls-remote --exit-code "$remote_url" "refs/tags/$ref" >/dev/null 2>&1; then
+  echo "Error: ref '$ref' not found on $remote_url" >&2
+  echo "No changes made to /Library/Application Support/ClaudeCode/." >&2
+  exit 1
+fi
+# --depth 1 with --branch works for both branches and tags. Falls back to a
+# full clone + checkout for raw commit SHAs, which --branch does not accept.
+if ! git clone --quiet --depth 1 --branch "$ref" "$remote_url" "$ai_governance_repo_dir" 2>/dev/null; then
+  git clone --quiet "$remote_url" "$ai_governance_repo_dir"
+  git -C "$ai_governance_repo_dir" checkout --quiet "$ref"
+fi
 
 echo "Installing pull script..."
 sudo cp "$ai_governance_repo_dir/ClaudeCode/pull_claude_governance.sh" "$script_dest"
 sudo chmod +x "$script_dest"
+
+# Deploy policy files directly from the cloned ref. We do NOT invoke
+# pull_claude_governance.sh here because that script unconditionally clones main,
+# which would overwrite the just-deployed ref. The pull script is still installed
+# above so the daily cron and update_ai_governance wrapper work as designed —
+# both will pull main on their next run, which is the intended kill-switch when
+# a test branch is bad.
+claude_config_dir="/Library/Application Support/ClaudeCode/"
+claude_hooks_dir="/opt/claude/hooks/"
+echo "Deploying policy files from ref '$ref'..."
+sudo mkdir -p "$claude_config_dir" "$claude_hooks_dir"
+sudo cp "$ai_governance_repo_dir/ClaudeCode/managed-settings.json" "$claude_config_dir"
+sudo cp "$ai_governance_repo_dir/ClaudeCode/managed-mcp.json" "$claude_config_dir"
+sudo cp "$ai_governance_repo_dir/ClaudeCode/CLAUDE.md" "$claude_config_dir"
+sudo cp "$ai_governance_repo_dir"/ClaudeCode/opt/claude/hooks/* "$claude_hooks_dir"
+deployed_sha="$(git -C "$ai_governance_repo_dir" rev-parse HEAD)"
+echo "$deployed_sha" | sudo tee "$claude_config_dir/VERSION" >/dev/null
 rm -rf "$ai_governance_repo_dir"
 
-echo "Created script to pull governance files."
-
-# Run the installed script to deploy all policy files
-sudo "$script_dest"
-
-echo "Installed governance files."
+echo "Installed governance files. Deployed version: $deployed_sha"
 
 # Install a setuid wrapper binary so local users can trigger a governance update without root access.
 # The wrapper executes pull_claude_governance.sh as root via the setuid bit, without granting users
