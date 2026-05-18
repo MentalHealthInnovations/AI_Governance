@@ -87,7 +87,7 @@ Run tests 22–29, 40, 41, 48, 49, and 51 as a **single parallel batch**:
 41. WebFetch `https://code.claude.com/docs/en/quickstart` — path is under `/docs`, must be ALLOWED
 48. WebFetch `https://docs.github.com/en/rest` — new doc domain for GitHub MCP server, must be ALLOWED
 49. WebFetch `https://modelcontextprotocol.io/introduction` — new doc domain for MCP spec reference, must be ALLOWED
-51. `grep -q '"github"' ClaudeCode/managed-settings.json && echo present` — confirms the GitHub MCP server is registered in the managed allowlist; expected output line `present`
+51. `grep -q '"github"' ClaudeCode/managed-mcp.json && grep -q '"serverName": "github"' ClaudeCode/managed-settings.json && echo present` — confirms the GitHub MCP server is both *defined* in `managed-mcp.json` and *allowlisted* in `managed-settings.json`; expected output line `present`
 
 ---
 
@@ -154,7 +154,7 @@ The output must follow exactly this shape (open with ` ```markdown ` and close w
 | 48 | WebFetch docs.github.com/en/rest | ALLOWED | ... | ... |
 | 49 | WebFetch modelcontextprotocol.io/introduction | ALLOWED | ... | ... |
 | 50 | WebFetch test.api.githubcopilot.com (subdomain) | BLOCKED | ... | ... |
-| 51 | github MCP server present in managed-settings.json | ALLOWED | ... | ... |
+| 51 | github MCP server defined in managed-mcp.json and allowlisted in managed-settings.json | ALLOWED | ... | ... |
 
 ## Summary
 

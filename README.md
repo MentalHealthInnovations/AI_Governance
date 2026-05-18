@@ -6,7 +6,8 @@ A layered configuration system that makes Claude Code safer to use at scale. The
 
 | File | Purpose |
 |------|---------|
-| `ClaudeCode/managed-settings.json` | Org-wide immutable guardrails |
+| `ClaudeCode/managed-settings.json` | Org-wide immutable guardrails (permissions, sandbox, hooks, MCP allowlist) |
+| `ClaudeCode/managed-mcp.json` | Server definitions for approved MCP servers (exclusive control mode) |
 | `ClaudeCode/CLAUDE.md` | Behavioural guidance for Claude Code agents |
 | `ClaudeCode/control_mappings.csv` | Control mapping to ISO 42001 / NIST AI RMF |
 | `ClaudeCode/opt/claude/hooks/bash-policy-check.sh` | Pre-execution policy hook for Bash |
@@ -25,7 +26,7 @@ Run `InstallClaudeGovernance.sh` once as root on each managed machine. It:
 2. Installs `/usr/local/bin/update_ai_governance`, a setuid wrapper so any local user can trigger a refresh without sudo.
 3. Schedules a daily cron (12:00) to keep policies current.
 
-Each run of `pull_claude_governance.sh` deploys `managed-settings.json` and `CLAUDE.md` to `/Library/Application Support/ClaudeCode/`, and hook scripts to `/opt/claude/hooks/`.
+Each run of `pull_claude_governance.sh` deploys `managed-settings.json`, `managed-mcp.json`, and `CLAUDE.md` to `/Library/Application Support/ClaudeCode/`, and hook scripts to `/opt/claude/hooks/`.
 
 ## Settings hierarchy
 
@@ -48,9 +49,19 @@ Claude Code uses a four-layer configuration system; higher layers take precedenc
 
 | Server | Runtime | Auth | Docs |
 |---|---|---|---|
-| `github` | Remote HTTP (`https://api.githubcopilot.com/mcp/`) | OAuth (per-user, device flow at first connect) | https://github.com/github/github-mcp-server |
+| `github` | Remote HTTP (`https://api.githubcopilot.com/mcp/`) | OAuth (per-user, browser flow at first connect) | https://github.com/github/github-mcp-server |
 
-`managed-settings.json` registers each server's endpoint. The first time Claude Code opens the `github` MCP server, it prompts an OAuth device flow against the engineer's own GitHub account — no shared org token, every action attributable. The OAuth grant is stored per machine; revoke at https://github.com/settings/applications. There is no local container and no `GITHUB_PERSONAL_ACCESS_TOKEN` to manage (those instructions are for the legacy local-Docker mode this repo does not use). If `claude mcp list` does not show `github`, run `update_ai_governance` and retry.
+Server definitions live in **`managed-mcp.json`** (deployed to `/Library/Application Support/ClaudeCode/managed-mcp.json`). This is Claude Code's "exclusive control" mode — when the file is present, it is the entire set of MCP servers users can run; nothing else is permitted. `managed-settings.json` carries only the *policy* layer (`allowedMcpServers` allowlist, `allowManagedMcpServersOnly: true`).
+
+The `github` entry has no `headers`, so Claude Code detects the `401` on first request and prompts an OAuth flow via `/mcp` against the engineer's own GitHub account. No shared org token, every action attributable. Tokens are stored securely per machine and refreshed automatically; revoke at https://github.com/settings/applications. If `claude mcp list` does not show `github`, run `update_ai_governance` and retry.
+
+A checked-in PAT is not supported — `managed-mcp.json` is world-readable on the device, and JSON does not expand shell substitutions. If you specifically need PAT auth (e.g. to scope to repos OAuth won't cover), add a *user-scoped* override locally — it does not affect anyone else and never enters source control:
+
+```bash
+claude mcp add-json --scope user github "{\"type\":\"http\",\"url\":\"https://api.githubcopilot.com/mcp/\",\"headers\":{\"Authorization\":\"Bearer ${GITHUB_PAT}\"}}"
+```
+
+Set `GITHUB_PAT` in the shell session where you launch Claude Code (do not persist it in `~/.zshrc`). Generate fine-grained tokens at https://github.com/settings/personal-access-tokens. See https://github.com/github/github-mcp-server/blob/main/docs/installation-guides/install-claude.md for full upstream guidance.
 
 ## Hooks
 
@@ -110,6 +121,7 @@ Verify after deploying:
 cat /Library/Application\ Support/ClaudeCode/VERSION
 shasum -a 256 /opt/claude/hooks/*.sh
 shasum -a 256 /Library/Application\ Support/ClaudeCode/managed-settings.json
+shasum -a 256 /Library/Application\ Support/ClaudeCode/managed-mcp.json
 ```
 
 Then open Claude Code in this repo and run `/test-guardrails` to confirm all controls are live. For hook or permission changes, do this on affected machines immediately after merge rather than waiting for cron.
@@ -135,7 +147,7 @@ Ownership:
 
 | Layer | Owned by |
 |---|---|
-| `managed-settings.json`, `CLAUDE.md`, hooks, sandbox, approved domains/MCP | IT and security |
+| `managed-settings.json`, `managed-mcp.json`, `CLAUDE.md`, hooks, sandbox, approved domains/MCP | IT and security |
 | `.claude/settings.json` (repo-local automation, low-risk allowlists) | Repo maintainers |
 | `~/.claude/settings.json`, `.claude/settings.local.json` (personal/convenience) | Individual engineers |
 
@@ -150,7 +162,7 @@ Engineers may improve convenience inside the rails; they do not control the rail
 | New WebFetch domain | `managed-settings.json` + `webfetch-policy-check.sh` |
 | Allow a currently-blocked Bash command | `bash-policy-check.sh` |
 | New/updated secret-detection pattern | `output-redact.sh` |
-| New MCP server | `managed-settings.json` |
+| New MCP server | `managed-mcp.json` (server definition) + `managed-settings.json` (allowlist) |
 | Behavioural guidance change | `CLAUDE.md` |
 | Team-wide repo allow rule | `.claude/settings.json` in that repo (not here) |
 | Personal preference | `~/.claude/settings.json` locally (not here) |
