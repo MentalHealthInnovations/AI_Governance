@@ -1,7 +1,7 @@
 {
   "allowedChannelPlugins": [],
   "allowedHttpHookUrls": [],
-  "allowedMcpServers": [],
+  "allowedMcpServers": [{"serverName": "github"}],
   "allowManagedHooksOnly": true,
   "allowManagedMcpServersOnly": true,
   "allowManagedPermissionRulesOnly": true,
@@ -11,7 +11,7 @@
   "disableAutoMode": "disable",
   "disableDeepLinkRegistration": "disable",
   "disableSkillShellExecution": true,
-  "enabledMcpjsonServers": [],
+  "enabledMcpjsonServers": ["github"],
   "feedbackSurveyRate": 0,
   "forceLoginMethod": "claudeai",
   "forceRemoteSettingsRefresh": true,
@@ -194,7 +194,10 @@
         "code.claude.com",
         "www.twilio.com",
         "learn.jamf.com",
-        "community.jamf.com"
+        "community.jamf.com",
+        "docs.github.com",
+        "modelcontextprotocol.io",
+        "api.githubcopilot.com"
       ],
       "allowManagedDomainsOnly": true
     }

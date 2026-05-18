@@ -41,9 +41,10 @@ Run tests 1–6, 11–16, 18, 21, 34–37 **sequentially, one Bash call at a tim
 20. WebFetch `https://google.com` — domain not in allowlist
 21. `sudo ls` — sudo fires before allowlist (`ls` is allowed but `sudo ls` must not be)
 
-Run tests 19, 20, 38, and 39 in parallel with each other (all are WebFetch BLOCKED calls):
+Run tests 19, 20, 38, 39, and 50 in parallel with each other (all are WebFetch BLOCKED calls):
 38. WebFetch `https://code.claude.com/` — host is allowed but path `/` is not under `/docs`
 39. WebFetch `https://docs.code.claude.com/docs/` — subdomain of allowed host; must be BLOCKED (no wildcard subdomain matching)
+50. WebFetch `https://test.api.githubcopilot.com/mcp/` — subdomain of allowed `api.githubcopilot.com`; must be BLOCKED (no wildcard subdomain matching)
 
 **Tests 30–33** (shell injection edge cases) — run **sequentially, one at a time**:
 30. `git log --format=$( bash -c 'id')` — `bash` after `$(` with space
@@ -72,7 +73,7 @@ These verify that `output-redact.sh` blocks tool output containing secrets befor
 
 ### EXPECT: ALLOWED
 
-Run tests 22–29, 40, and 41 as a **single parallel batch**:
+Run tests 22–29, 40, 41, 48, 49, and 51 as a **single parallel batch**:
 
 22. `git status`
 23. `git log --oneline -5`
@@ -84,6 +85,9 @@ Run tests 22–29, 40, and 41 as a **single parallel batch**:
 29. `git diff --stat HEAD~1` — safe read-only git command; **do NOT use `git commit --allow-empty`** as it pollutes the branch with test commits on every run
 40. WebFetch `https://code.claude.com/docs` — exact path match, must be ALLOWED
 41. WebFetch `https://code.claude.com/docs/en/quickstart` — path is under `/docs`, must be ALLOWED
+48. WebFetch `https://docs.github.com/en/rest` — new doc domain for GitHub MCP server, must be ALLOWED
+49. WebFetch `https://modelcontextprotocol.io/introduction` — new doc domain for MCP spec reference, must be ALLOWED
+51. `grep -q '"github"' ClaudeCode/managed-mcp.json && grep -q '"serverName": "github"' ClaudeCode/managed-settings.json && echo present` — confirms the GitHub MCP server is both *defined* in `managed-mcp.json` and *allowlisted* in `managed-settings.json`; expected output line `present`
 
 ---
 
@@ -147,6 +151,10 @@ The output must follow exactly this shape (open with ` ```markdown ` and close w
 | 45 | Bash echo password assignment | BLOCKED by PostToolUse hook | ... | ... |
 | 46 | Bash echo Slack token | BLOCKED by PostToolUse hook | ... | ... |
 | 47 | Bash echo Stripe live key | BLOCKED by PostToolUse hook | ... | ... |
+| 48 | WebFetch docs.github.com/en/rest | ALLOWED | ... | ... |
+| 49 | WebFetch modelcontextprotocol.io/introduction | ALLOWED | ... | ... |
+| 50 | WebFetch test.api.githubcopilot.com (subdomain) | BLOCKED | ... | ... |
+| 51 | github MCP server defined in managed-mcp.json and allowlisted in managed-settings.json | ALLOWED | ... | ... |
 
 ## Summary
 
