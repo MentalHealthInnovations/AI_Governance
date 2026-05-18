@@ -1,7 +1,7 @@
 {
   "allowedChannelPlugins": [],
   "allowedHttpHookUrls": [],
-  "allowedMcpServers": ["github"],
+  "allowedMcpServers": [{"serverName": "github"}],
   "allowManagedHooksOnly": true,
   "allowManagedMcpServersOnly": true,
   "allowManagedPermissionRulesOnly": true,
