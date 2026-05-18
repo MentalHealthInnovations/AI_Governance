@@ -1,13 +1,7 @@
 {
   "allowedChannelPlugins": [],
   "allowedHttpHookUrls": [],
-  "allowedMcpServers": ["atlassian"],
-  "mcpServers": {
-    "atlassian": {
-      "type": "sse",
-      "url": "https://mcp.atlassian.com/v1/sse"
-    }
-  },
+  "allowedMcpServers": [{"serverName": "atlassian"}],
   "allowManagedHooksOnly": true,
   "allowManagedMcpServersOnly": true,
   "allowManagedPermissionRulesOnly": true,

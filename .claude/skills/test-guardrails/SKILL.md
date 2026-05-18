@@ -74,7 +74,7 @@ These verify that `output-redact.sh` blocks tool output containing secrets befor
 
 ### EXPECT: ALLOWED
 
-Run tests 22–29, 40, 41, and 50–52 as a **single parallel batch**:
+Run tests 22–29, 40, 41, 50–52, and 53 as a **single parallel batch**:
 
 22. `git status`
 23. `git log --oneline -5`
@@ -89,6 +89,7 @@ Run tests 22–29, 40, 41, and 50–52 as a **single parallel batch**:
 50. WebFetch `https://support.atlassian.com/jira-software-cloud/` — Atlassian docs host, must be ALLOWED
 51. WebFetch `https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/` — Atlassian developer docs host, must be ALLOWED
 52. WebFetch `https://community.atlassian.com/forums/Jira/ct-p/jira` — Atlassian community host, must be ALLOWED
+53. `grep -q '"atlassian"' ClaudeCode/managed-mcp.json && grep -q '"serverName": "atlassian"' ClaudeCode/managed-settings.json && echo present` — confirms the Atlassian MCP server is both *defined* in `managed-mcp.json` and *allowlisted* in `managed-settings.json`; expected output line `present`
 
 ---
 
@@ -157,6 +158,7 @@ The output must follow exactly this shape (open with ` ```markdown ` and close w
 | 50 | WebFetch support.atlassian.com/jira-software-cloud/ | ALLOWED | ... | ... |
 | 51 | WebFetch developer.atlassian.com/cloud/jira/platform/rest/v3/intro/ | ALLOWED | ... | ... |
 | 52 | WebFetch community.atlassian.com/forums/Jira/ct-p/jira | ALLOWED | ... | ... |
+| 53 | atlassian MCP server defined in managed-mcp.json and allowlisted in managed-settings.json | ALLOWED | ... | ... |
 
 ## Summary
 

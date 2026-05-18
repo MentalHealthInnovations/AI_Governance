@@ -6,7 +6,8 @@ A layered configuration system that makes Claude Code safer to use at scale. The
 
 | File | Purpose |
 |------|---------|
-| `ClaudeCode/managed-settings.json` | Org-wide immutable guardrails |
+| `ClaudeCode/managed-settings.json` | Org-wide immutable guardrails (permissions, sandbox, hooks, MCP allowlist) |
+| `ClaudeCode/managed-mcp.json` | Server definitions for approved MCP servers (Claude Code's "exclusive control" mode) |
 | `ClaudeCode/CLAUDE.md` | Behavioural guidance for Claude Code agents |
 | `ClaudeCode/control_mappings.csv` | Control mapping to ISO 42001 / NIST AI RMF |
 | `ClaudeCode/opt/claude/hooks/bash-policy-check.sh` | Pre-execution policy hook for Bash |
@@ -24,7 +25,7 @@ Run `InstallClaudeGovernance.sh` once as root on each managed machine. It:
 2. Installs `/usr/local/bin/update_ai_governance`, a setuid wrapper so any local user can trigger a refresh without sudo.
 3. Schedules a daily cron (12:00) to keep policies current.
 
-Each run of `pull_claude_governance.sh` deploys `managed-settings.json` and `CLAUDE.md` to `/Library/Application Support/ClaudeCode/`, and hook scripts to `/opt/claude/hooks/`.
+Each run of `pull_claude_governance.sh` deploys `managed-settings.json`, `managed-mcp.json`, and `CLAUDE.md` to `/Library/Application Support/ClaudeCode/`, and hook scripts to `/opt/claude/hooks/`.
 
 ## Settings hierarchy
 
@@ -64,15 +65,17 @@ This section covers how engineers actually use the MCP servers listed in [Contro
 
 **What it does.** Lets Claude Code read and update Jira issues and Confluence pages — fetch a ticket, post a comment, transition a status, summarise a Confluence page. Useful for ticket triage, drafting comments from local code context, and pulling acceptance criteria into a working session.
 
-**Endpoint.** `https://mcp.atlassian.com/v1/sse` (SSE transport). Hosted by Atlassian — no local install, no API token, no env var required on the engineer's machine.
+**Endpoint.** `https://mcp.atlassian.com/v1/mcp` (Streamable HTTP transport). Hosted by Atlassian — no local install, no API token, no env var required on the engineer's machine. Atlassian also still serves an `/v1/sse` SSE endpoint for backward compatibility, but [recommends `/mcp`](https://github.com/atlassian/atlassian-mcp-server) for new clients; Claude Code also flags SSE as deprecated.
 
-**Authentication model — per user, not global.** The Atlassian Remote MCP uses OAuth 2.1 and authenticates each engineer individually:
+**Authentication model — per user, not global.** The Atlassian Remote MCP defaults to OAuth 2.1 and authenticates each engineer individually:
 
 - On first use, Claude Code opens a browser. The engineer signs in with their MHI Atlassian account and grants scopes.
 - Atlassian issues a per-user token bound to that engineer's identity and stored locally by Claude Code.
 - Every action runs **as that engineer**, so existing Atlassian permissions, project access, and audit logs apply unchanged.
 
-There is intentionally no shared admin token that could be configured once for the whole org. A shared token would break the audit trail (every action would appear as a service account) and would grant every Claude Code user the union of all permissions. Atlassian does not support that mode.
+Atlassian also offers a per-user API token mode for headless/long-running clients — we don't use it here because the OAuth flow is friendlier and gives the same per-user attribution.
+
+We do not configure a shared admin token. Beyond Atlassian not supporting that mode for Rovo MCP, it would break the audit trail (every action would appear as a service account) and would grant every Claude Code user the union of all permissions.
 
 > **One-time org admin step (verify before broad rollout):** an Atlassian org admin may need to confirm the Remote MCP / Rovo feature is enabled at the org level in the Atlassian admin console before individual users can connect. On some Atlassian plans this is on by default; on plans with stricter defaults an admin must allow it. This needs to be confirmed against the current Atlassian admin documentation before this PR is marked ready for review. Contact max.levine@mhiuk.org or edward@mhiuk.org — they hold the Atlassian admin role.
 
