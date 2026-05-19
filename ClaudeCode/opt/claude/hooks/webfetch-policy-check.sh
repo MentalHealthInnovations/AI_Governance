@@ -26,61 +26,28 @@ hostname="$(printf '%s' "$url" | sed -E 's|^[^:]+://([^/:?#@]*@)?([^/:?#]*).*|\2
 
 logtofile "hostname extracted: $hostname"
 
-# Unified allowlist. Each entry is either:
-#   "example.com"        — allows requests to exactly example.com, any path
-#   "example.com/path"   — allows requests to exactly example.com under /path/* only
+# Allowlist is the bare-hostname list from managed-settings.json, read at runtime
+# so the OS sandbox layer (network.allowedDomains) and this hook stay in lockstep
+# without a manual sync step. No wildcard subdomain matching — subdomains must
+# be listed explicitly. No path scoping — if a host is listed, any path on that
+# host is allowed.
 #
-# No wildcard subdomain matching — subdomains must be listed explicitly.
-#
-# *** SYNC REQUIRED ***
-# This list and network.allowedDomains in managed-settings.json enforce the same
-# boundary at different layers (hook vs OS sandbox) and must be kept identical.
-# When adding or removing a domain here, make the same change in managed-settings.json.
-# Use only the bare hostname there — path-scoped entries are only supported in this file.
-allowed_entries=(
-  "github.com"
-  "api.github.com"
-  "objects.githubusercontent.com"
-  "raw.githubusercontent.com"
-  "registry.npmjs.org"
-  "pypi.org"
-  "files.pythonhosted.org"
-  "proxy.golang.org"
-  "crates.io"
-  "index.crates.io"
-  "registry-1.docker.io"
-  "auth.docker.io"
-  "production.cloudflare.docker.com"
-  "mentalhealthinnovations.org"
-  "themix.org.uk"
-  "giveusashout.org"
-  "code.claude.com/docs"
-  "www.twilio.com"
-  "learn.jamf.com"
-  "community.jamf.com"
-)
+# Depends on `jq` (also required by bash-policy-check.sh and output-redact.sh).
+managed_settings="/Library/Application Support/ClaudeCode/managed-settings.json"
 
-path="$(printf '%s' "$url" | sed -E 's|^[^:]+://[^/]*(/.*)$|\1|')"
-path="${path:-/}"
+if [[ ! -r "$managed_settings" ]]; then
+  logtofile "DENY managed-settings.json missing or unreadable: $url"
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"WebFetch allowlist unavailable — managed-settings.json missing or unreadable"}}'
+  exit 0
+fi
 
-for entry in "${allowed_entries[@]}"; do
-  entry_host="${entry%%/*}"
-  if [[ "$entry" == */* ]]; then
-    entry_path="/${entry#*/}"
-  else
-    entry_path=""
-  fi
-
-  if [[ "$hostname" == "$entry_host" ]]; then
-    if [[ -z "$entry_path" || "$path" == "$entry_path" || "$path" == "$entry_path/"* ]]; then
-      echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
-      exit 0
-    fi
-    logtofile "DENY host '$entry_host' matched but path '$path' not under '$entry_path': $url"
-    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Domain not in WebFetch allowlist"}}'
-    exit 0
-  fi
-done
+# jq emits one host per line; grep -Fx matches the extracted hostname against
+# any line exactly. Fails closed: if jq errors or no domains are configured,
+# nothing matches and the deny below fires.
+if printf '%s\n' "$hostname" | grep -Fxq -f <(jq -r '.sandbox.network.allowedDomains[]? // empty' "$managed_settings" 2>/dev/null); then
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
+  exit 0
+fi
 
 logtofile "DENY domain not in allowlist: $hostname"
 echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Domain not in WebFetch allowlist"}}'
