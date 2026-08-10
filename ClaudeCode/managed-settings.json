@@ -286,6 +286,15 @@
         ]
       },
       {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/claude/hooks/pii-path-policy-check.sh"
+          }
+        ]
+      },
+      {
         "matcher": "Edit|Write|Task|SlashCommand|Read",
         "hooks": [
           {

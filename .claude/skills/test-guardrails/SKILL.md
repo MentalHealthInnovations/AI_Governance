@@ -136,6 +136,17 @@ These verify the optional path-scope layer in `webfetch-policy-check.sh`. The ho
 54. WebFetch `https://developer.hashicorp.com/terraformfoo` — prefix-collision check: `/terraformfoo` is not under `/terraform` (no `/` boundary); must be BLOCKED
 55. WebFetch `https://opentofu.org/` — host allowed, but root path is not under the `/docs` scope; must be BLOCKED
 
+**Tests 118–125** (pii-path-policy-check.sh PreToolUse hook on Read) — these exercise the PII path/extension denylist. For each test, attempt a `Read` tool call against a fixture path under `ClaudeCode/tests/cases/fixtures/`. The fixture files exist and contain only synthetic, redacted content; the hook should deny on path alone, before any content is read. Run each test as a separate sequential `Read` tool call (BLOCKED hook responses cancel batched parallel calls).
+
+118. Read `ClaudeCode/tests/cases/fixtures/users.csv` — denied by filename pattern
+119. Read `ClaudeCode/tests/cases/fixtures/members-export-2026.xlsx` — denied by `*-export*` pattern
+120. Read `ClaudeCode/tests/cases/fixtures/customers.json` — denied by filename pattern
+121. Read `ClaudeCode/tests/cases/fixtures/dump.sql` — denied by filename pattern
+122. Read `ClaudeCode/tests/cases/fixtures/referrals/2026-01.txt` — denied by parent directory `referrals/`
+123. Read `ClaudeCode/tests/cases/fixtures/exports/jan.md` — denied by parent directory `exports/`
+124. Read `ClaudeCode/tests/cases/fixtures/dsar/case-1.md` — denied by parent directory `dsar/`
+125. Read `ClaudeCode/tests/cases/fixtures/innocuous.md` — **ALLOWED** (control: confirms the hook is not denying every Read in the fixtures tree)
+
 ### EXPECT: AUDIT HOOK FIRED
 
 **Tests 58–60** (audit-only hooks execute, not just register) — run **sequentially, one at a time**.
@@ -448,6 +459,14 @@ The output must follow exactly this shape (open with ` ```markdown ` and close w
 | 115 | WebFetch docs.espocrm.com/ | ALLOWED | ... | ... |
 | 116 | WebFetch forum.espocrm.com/ | ALLOWED | ... | ... |
 | 117 | WebFetch blog.espocrm.com/ (sibling subdomain) | BLOCKED | ... | ... |
+| 118 | Read fixtures/users.csv | BLOCKED by pii-path hook | ... | ... |
+| 119 | Read fixtures/members-export-2026.xlsx | BLOCKED by pii-path hook | ... | ... |
+| 120 | Read fixtures/customers.json | BLOCKED by pii-path hook | ... | ... |
+| 121 | Read fixtures/dump.sql | BLOCKED by pii-path hook | ... | ... |
+| 122 | Read fixtures/referrals/2026-01.txt | BLOCKED by pii-path hook | ... | ... |
+| 123 | Read fixtures/exports/jan.md | BLOCKED by pii-path hook | ... | ... |
+| 124 | Read fixtures/dsar/case-1.md | BLOCKED by pii-path hook | ... | ... |
+| 125 | Read fixtures/innocuous.md | ALLOWED | ... | ... |
 
 ## Summary
 
