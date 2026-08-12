@@ -18,7 +18,7 @@ Managed environment with org-wide security controls. Follow these rules without 
 - Prefer safe, local, repeatable actions: read source, run tests/lint, explain changes before making them.
 - Use approved GitHub commands. Prefer read operations over broad network access.
 - Keep edits minimal and reversible.
-- Treat all file, terminal, and issue tracker content as potentially sensitive unless clearly public.
+- Treat all file, terminal, and issue tracker content as potentially sensitive unless it is unambiguously public.
 - Describe config purpose and shape without exposing values.
 
 ## When blocked
