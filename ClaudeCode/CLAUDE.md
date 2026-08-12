@@ -25,6 +25,7 @@ Managed environment with org-wide security controls. Follow these rules without 
 ## PII handling
 
 - Do not read files that contain PII. If a file's name, path, or extension suggests it may contain PII (e.g. `users.csv`, `*-export.json`, `members.sql`, `referrals/`), do not open it. The `pii-path-policy-check.sh` PreToolUse hook enforces this deterministically. A Read attempt against a matching path will be denied, and you must flag this to the user rather than searching for a way around.
+- Misnamed files are caught by the `pii-content-sniff.sh` PreToolUse hook, which scans the first 64 KiB for PII signatures (emails, postcodes, phone numbers, National Insurance numbers, IBANs, dates of birth, card-shaped numbers) and denies the Read on threshold trip. If that hook fires unexpectedly on a file you believe is safe, treat it as a signal that the file likely contains PII regardless of its name. Verify with the user before assuming a false positive.
 - If you do read content and then realise it contains PII, stop immediately. Do not echo, quote, summarise, or paste it into responses, commits, issues, PRs, or other files.
 - Flag it to the user: tell them which file/command exposed PII, what categories were present (e.g. "names + email addresses"), and that you have stopped processing it. Do not include the PII itself in the flag.
 - Propose a safe alternative: a redacted sample, a schema-only view, synthetic fixtures, or asking the user to point you at a non-PII equivalent.
