@@ -1,6 +1,6 @@
-# Claude Code — AI Agent Governance Control Pack
+# Claude Code: AI Agent Governance Control Pack
 
-A layered configuration system that makes Claude Code safer to use at scale. The goal is fewer prompts, not more — by removing the riskiest options from the environment up front.
+A layered configuration system that makes Claude Code safer to use at scale. The goal is fewer prompts, not more, by removing the riskiest options from the environment up front.
 
 ## File manifest
 
@@ -18,7 +18,7 @@ A layered configuration system that makes Claude Code safer to use at scale. The
 | `ClaudeCode/opt/claude/hooks/session-audit.sh` | Audit-only hook for `SessionStart`, `Stop`, `SessionEnd` |
 | `ClaudeCode/opt/claude/hooks/lib/audit-log.sh` | Shared helper: appends a JSONL record per invocation |
 | `ClaudeCode/opt/claude/hooks/lib/redact.sh` | Shared secret-redaction patterns (output + prompt) |
-| `ClaudeCode/opt/claude/bin/upload-audit-logs.sh` | Daily uploader: ships the six hook logs to the audit S3 bucket (see appendix) |
+| `ClaudeCode/opt/claude/bin/upload-audit-logs.sh` | Daily uploader: ships the hook logs to the audit S3 bucket (see appendix) |
 | `ClaudeCode/pull_claude_governance.sh` | Pulls and deploys policy files; self-updates each run |
 | `ClaudeCode/InstallClaudeGovernance.sh` | One-time macOS bootstrap for `pull_claude_governance.sh` |
 | [Appendix: AWS audit-log setup](#appendix-aws-audit-log-setup) | Phase 0 manual AWS setup for the audit-log S3 bucket + IAM (IaC later) |
@@ -30,7 +30,7 @@ A layered configuration system that makes Claude Code safer to use at scale. The
 
 ### Prerequisites
 
-The install script installs both dependencies on demand via Jamf custom triggers. Both are required; the script refuses to proceed if either is missing and the corresponding trigger isn't supplied.
+The install script installs both dependencies on demand via Jamf custom triggers. Both are required. The script refuses to proceed if either is missing and the corresponding trigger isn't supplied.
 
 | Parameter | Resource | Used when |
 |---|---|---|
@@ -39,7 +39,7 @@ The install script installs both dependencies on demand via Jamf custom triggers
 | `$6` | AWS CLI | Audit-log S3 upload is being configured and `aws` is missing. The script runs `jamf policy -event "$6"` (trigger `installAwsCli`). Optional. |
 | `$7`, `$8` | `claude-audit-writer` access key id / secret | Both supplied to enable audit-log S3 upload. Optional; when either is empty, upload is skipped and governance install is unaffected. |
 
-Configure the script in Jamf with the custom triggers of your existing jq and CLT install policies as parameters 4 and 5. Both dependencies are runtime-critical — `jq` parses every hook payload and reads the WebFetch allowlist; CLT provides `git` and a C compiler that this script needs to install other governance components. If jq is later removed from a machine, the hooks fail closed (preserving security) and block every Bash, WebFetch, and Read call until it's reinstalled.
+Configure the script in Jamf with the custom triggers of your existing jq and CLT install policies as parameters 4 and 5. Both dependencies are runtime-critical. `jq` parses every hook payload and reads the WebFetch allowlist, and CLT provides `git` and a C compiler that this script needs to install other governance components. If jq is later removed from a machine, the hooks fail closed (preserving security) and block every Bash, WebFetch, and Read call until it's reinstalled.
 
 Parameters 6–8 are optional and configure the audit-log S3 upload add-on (see the [AWS audit-log appendix](#appendix-aws-audit-log-setup)). They are best-effort: a failure to set up upload logs a warning but never blocks the governance install.
 
@@ -55,38 +55,38 @@ Each run of `pull_claude_governance.sh` deploys `managed-settings.json`, `manage
 
 ## Settings hierarchy
 
-Claude Code uses a four-layer configuration system; higher layers take precedence and deny rules are cumulative. See [the Claude Code docs](https://code.claude.com/docs/en/settings#configuration-scopes) for full detail.
+Claude Code uses a four-layer configuration system. Higher layers take precedence, and deny rules are cumulative. See [the Claude Code docs](https://code.claude.com/docs/en/settings#configuration-scopes) for full detail.
 
-`managed-settings.json` is the security boundary — network egress, credential deny rules, sandbox policy, approved MCP servers, and mandatory hooks. Developers cannot edit it.
+`managed-settings.json` is the security boundary: network egress, credential deny rules, sandbox policy, approved MCP servers, and mandatory hooks. Developers cannot edit it.
 
-`CLAUDE.md` sits outside the permissions hierarchy. It shapes Claude's behaviour (conventions, tone, review expectations); the settings layers define what it is *allowed* to do.
+`CLAUDE.md` sits outside the permissions hierarchy. It shapes Claude's behaviour (conventions, tone, review expectations), while the settings layers define what it is *allowed* to do.
 
 ## Control surfaces
 
-- **Bash** — known-bad commands denied outright; medium-risk requires approval; common low-risk allowed.
-- **Network** — egress restricted to an allowlist; generic download/exfiltration tools blocked.
-- **Filesystem** — safe working dirs allowed; `.env`, `secrets/`, SSH keys, cloud creds, and system paths blocked.
-- **GitHub** — the `gh` CLI is enabled for the PR/issue workflow with layered guardrails; destructive and exfil-capable subcommands are hook-blocked, and merge/push protection is delegated to GitHub rulesets. See [GitHub CLI](#github-cli-gh) below.
-- **MCP servers** — locked to the managed allowlist. New servers go through the same PR process as new domains.
+- **Bash**: known-bad commands denied outright, medium-risk requires approval, common low-risk allowed.
+- **Network**: egress restricted to an allowlist, generic download and exfiltration tools blocked.
+- **Filesystem**: safe working dirs allowed, while `.env`, `secrets/`, SSH keys, cloud creds, and system paths are blocked.
+- **GitHub**: the `gh` CLI is enabled for the PR and issue workflow with layered guardrails. Destructive and exfil-capable subcommands are hook-blocked, and merge/push protection is delegated to GitHub rulesets. See [GitHub CLI](#github-cli-gh) below.
+- **MCP servers**: locked to the managed allowlist. New servers go through the same PR process as new domains.
     - Atlassian server: Streamable HTTP (`https://mcp.atlassian.com/v1/mcp`), per-user OAuth, acting as the signed-in engineer. A managed PreToolUse hook (`mcp-policy-check.sh`) enforces a default-deny tool allowlist, currently scoped to Jira reads and writes, project-restricted. See [MCP server operational notes → Tool allowlist](#tool-allowlist-default-deny).
-- **Skills** — `disableSkillShellExecution: true` prevents skill scripts from shelling out directly, forcing them through the hook-policed tool pathway.
+- **Skills**: `disableSkillShellExecution: true` prevents skill scripts from shelling out directly, forcing them through the hook-policed tool pathway.
 
 ### GitHub CLI (`gh`)
 
-Agent-driven development is significantly slower when every GitHub operation (opening a PR, listing PRs, triaging issues) has to be handed back to a human, so the `gh` CLI is deliberately usable from sandboxed Bash. For that to work the OS sandbox must let the `gh` **binary** read its own `~/.config/gh/config.yml` / `hosts.yml` — so that directory is intentionally absent from `sandbox.filesystem.denyRead` (see `_comment_ghConfig` in `managed-settings.json`). The credential is shielded by layers other than the blanket read-deny:
+Agent-driven development is significantly slower when every GitHub operation (opening a PR, listing PRs, triaging issues) has to be handed back to a human, so the `gh` CLI is deliberately usable from sandboxed Bash. For that to work the OS sandbox must let the `gh` **binary** read its own `~/.config/gh/config.yml` / `hosts.yml`, so that directory is intentionally absent from `sandbox.filesystem.denyRead` (see `_comment_ghConfig` in `managed-settings.json`). The credential is shielded by layers other than the blanket read-deny:
 
 - **Claude's Read tool** is denied on `~/.config/gh/**` (permission rule in `managed-settings.json`).
-- **Bash commands that name the config path** are denied by the `gh_config_path` pre-block in `bash-policy-check.sh` — `gh` never takes its config path as an argument, so any command text mentioning it is an attempt to read the token with an allowlisted text tool.
-- **`output-redact.sh`** blocks any tool output containing a GitHub token (`gh[pousr]_…` / `github_pat_…` patterns) from reaching Claude's context — the backstop for path-glob evasion of the pre-block.
+- **Bash commands that name the config path** are denied by the `gh_config_path` pre-block in `bash-policy-check.sh`. `gh` never takes its config path as an argument, so any command text mentioning it is an attempt to read the token with an allowlisted text tool.
+- **`output-redact.sh`** blocks any tool output containing a GitHub token (`gh[pousr]_…` / `github_pat_…` patterns) from reaching Claude's context. This is the backstop for path-glob evasion of the pre-block.
 - **Subcommand allowlist**: only `gh issue|pr|repo|gist|label|release` pass the hook at all; everything else is denied by default. On top of that, two pre-blocks fire ahead of the allowlist: `gh_credential_surface` denies `gh auth` (including `gh auth token`, which prints the live credential), `gh api`, `gh secret`, `gh ssh-key`, `gh gpg-key`, and `gh codespace` explicitly; `gh_subcommand` denies `gist create/edit`, `repo delete/archive/rename/edit/create/fork`, `release create/upload/delete/edit`, and `pr merge --admin`.
 
-**Push-to-main and merge protection is intentionally *not* enforced client-side.** Plain `gh pr merge` and `git push` are allowed by the hook; the control locus for "don't land unreviewed changes on main" is GitHub itself — branch protection rulesets on governed repos (require a PR with approvals, block force pushes, restrict deletions). Server-side rules hold no matter which client — Claude, a human terminal, or CI — performs the operation, which is exactly why they, and not CLI crippling, are the right place for that control. The one client-side exception is `--admin`, which exists to bypass those rules and is therefore hook-blocked.
+**Push-to-main and merge protection is intentionally *not* enforced client-side.** Plain `gh pr merge` and `git push` are allowed by the hook. The control for "don't land unreviewed changes on main" sits in GitHub itself, in branch protection rulesets on governed repos (require a PR with approvals, block force pushes, restrict deletions). Server-side rules hold no matter which client performs the operation, whether Claude, a human terminal, or CI, and that is why they, rather than CLI crippling, are the right place for that control. The one client-side exception is `--admin`, which exists to bypass those rules and is therefore hook-blocked.
 
 ## Hooks
 
-Hooks are deployed to `/opt/claude/hooks/` and must be present before Claude Code runs — if a policy hook is missing or fails, the operation is blocked.
+Hooks are deployed to `/opt/claude/hooks/` and must be present before Claude Code runs. If a policy hook is missing or fails, the operation is blocked.
 
-Two roles: **policy** hooks make allow/deny decisions; **audit** hooks observe and always allow. Both write to the same JSONL audit trail.
+Two roles. **Policy** hooks make allow/deny decisions, and **audit** hooks observe and always allow. Both write to the same JSONL audit trail.
 
 | Hook | Role | Triggers on |
 |---|---|---|
@@ -97,16 +97,16 @@ Two roles: **policy** hooks make allow/deny decisions; **audit** hooks observe a
 | `prompt-submit.sh` | audit | `UserPromptSubmit` |
 | `session-audit.sh` | audit | `SessionStart`, `Stop`, `SessionEnd` |
 
-- **`bash-policy-check.sh`** — enforces policy beyond glob matching; catches obfuscation and compound expressions that would bypass simple deny patterns.
-- **`webfetch-policy-check.sh`** — enforces the domain allowlist.
-- **`output-redact.sh`** — scans tool output for secrets. On match, the result is blocked before entering Claude's context. The UI transcript may still show the raw output, but Claude cannot read or act on it. Patterns (defined in `lib/redact.sh`): PEM blocks, AWS keys, GitHub PATs (classic and fine-grained), `sk-` keys, Slack tokens, JWTs, Bearer headers, generic `key=value` / `password=value` assignments, connection strings, and Stripe/Twilio/SendGrid keys.
-- **`tool-audit.sh`** — pure observer. Logs file paths and sizes for Edit/Write, subagent type and prompt length for Task, the command string for SlashCommand, and file path / offset / limit for Read. Never blocks.
-- **`prompt-submit.sh`** — captures every prompt the user submits. The prompt text is passed through the same redaction patterns as tool output, so credentials pasted into prompts are stripped before they reach the audit log. The list of patterns that fired is recorded so an analyst can see *that* a secret was present without storing it.
-- **`session-audit.sh`** — records session start (with source: `startup` / `resume` / `clear` / `compact`), `Stop` events, and `SessionEnd` reasons. Lets you reconstruct a per-session timeline by filtering the JSONL trail on `session_id`.
+- **`bash-policy-check.sh`** enforces policy beyond glob matching, catching obfuscation and compound expressions that would bypass simple deny patterns.
+- **`webfetch-policy-check.sh`** enforces the domain allowlist.
+- **`output-redact.sh`** scans tool output for secrets. On match, the result is blocked before entering Claude's context. The UI transcript may still show the raw output, but Claude cannot read or act on it. Patterns (defined in `lib/redact.sh`): PEM blocks, AWS keys, GitHub PATs (classic and fine-grained), `sk-` keys, Slack tokens, JWTs, Bearer headers, generic `key=value` / `password=value` assignments, connection strings, and Stripe/Twilio/SendGrid keys.
+- **`tool-audit.sh`** is a pure observer. It logs file paths and sizes for Edit/Write, subagent type and prompt length for Task, the command string for SlashCommand, and file path / offset / limit for Read. Never blocks.
+- **`prompt-submit.sh`** captures every prompt the user submits. The prompt text is passed through the same redaction patterns as tool output, so credentials pasted into prompts are stripped before they reach the audit log. The list of patterns that fired is recorded so an analyst can see *that* a secret was present without storing it.
+- **`session-audit.sh`** records session start (with source: `startup` / `resume` / `clear` / `compact`), `Stop` events, and `SessionEnd` reasons. Lets you reconstruct a per-session timeline by filtering the JSONL trail on `session_id`.
 
 ## Audit logs
 
-Every hook writes one structured JSON Lines record per invocation to `~/.claude/debug/<hook>.jsonl`. **All invocations are logged, not just blocks or redacts** — allow decisions are recorded as `decision: "allow"` and pure observers use `decision: "observe"`.
+Every hook writes one structured JSON Lines record per invocation to `~/.claude/debug/<hook>.jsonl`. **All invocations are logged, not just blocks or redacts.** Allow decisions are recorded as `decision: "allow"`, and pure observers use `decision: "observe"`.
 
 | Hook | Log path |
 |---|---|
@@ -131,7 +131,7 @@ Every record carries a common envelope:
 | `ts` | UTC timestamp, ISO-8601 |
 | `hook` | Hook name (e.g. `bash-policy`) |
 | `user` | Local OS user |
-| `host` | Short hostname (`hostname -s`) — identifies which machine emitted the record |
+| `host` | Short hostname (`hostname -s`), identifying which machine emitted the record |
 | `proc_cwd` | Hook process working directory |
 | `payload_cwd` | `cwd` reported by Claude Code in the hook payload |
 | `session_id` | Claude Code session UUID |
@@ -150,7 +150,7 @@ Plus hook-specific fields. Examples:
 
 Review logs for repeated denies on the same command (legitimate use case to allow, or a workaround attempt), unexpected redact hits (project storing secrets badly), or repeated WebFetch denies on the same domain (dependency on an unapproved service).
 
-The six logs are append-only and safe to tail or rotate. The governance pack ships them to S3 daily (see the [AWS audit-log appendix](#appendix-aws-audit-log-setup)); to forward them elsewhere as well (a SIEM, osquery), tail the same six paths.
+The logs are append-only and safe to tail or rotate. The governance pack ships them to S3 daily (see the [AWS audit-log appendix](#appendix-aws-audit-log-setup)). To forward them elsewhere as well (a Security Information and Event Management (SIEM) platform, osquery), tail the same paths.
 
 ### Log rotation
 
@@ -224,7 +224,7 @@ Scope choices are made by the engineer at the consent screen and can be widened 
 
 ### Tool allowlist (default-deny)
 
-Connecting authenticates Claude Code **as the signed-in engineer**, so without a further control it could call any tool the Atlassian MCP exposes with that engineer's permissions. To bound this, a managed PreToolUse hook (`/opt/claude/hooks/mcp-policy-check.sh`, matcher `mcp__.*`) enforces a per-server **default-deny allowlist**: an MCP tool runs only when its name is listed for its server in the `is_allowed` function inside the hook. Every tool not listed is denied, and every tool of a server with no entry at all is denied. An unparseable tool name also denies. The allowlist is the only thing that grants tool access, and it lives in the hook script itself (the sole consumer), not in `managed-settings.json`. `allowedMcpServers` in `managed-settings.json` controls which servers may connect; the hook controls which of their tools may run.
+Connecting authenticates Claude Code **as the signed-in engineer**, so without a further control it could call any tool the Atlassian MCP exposes with that engineer's permissions. To bound this, a managed PreToolUse hook (`/opt/claude/hooks/mcp-policy-check.sh`, matcher `mcp__.*`) enforces a per-server **default-deny allowlist**: an MCP tool runs only when its name is listed for its server in the `is_allowed` function inside the hook. Every tool not listed is denied, and every tool of a server with no entry at all is denied. An unparseable tool name also denies. The allowlist is the only thing that grants tool access, and it lives in the hook script itself (the sole consumer), not in `managed-settings.json`. `allowedMcpServers` in `managed-settings.json` controls which servers may connect, and the hook controls which of their tools may run.
 
 This is a managed control, not an engineer preference: it cannot be overridden from user or project settings, and it holds regardless of which OAuth scopes were granted or how broad the engineer's Atlassian permissions are.
 
@@ -232,7 +232,7 @@ The current `atlassian` allowlist permits Jira **reads and writes**: the reads a
 
 #### Project scoping
 
-On top of the tool allowlist, the same hook bounds every Jira read or write that names a project or issue to an allowlist of **project keys**, held in `ATLASSIAN_PROJECTS` in `mcp-policy-check.sh` (currently `PLAN`, `DENGS`, `DATA`, `MJB`, `DE`, `DSD`, `ED`, `DAR`). A call is allowed only when its key is on that list; every other project is denied with `project_not_in_allowlist` before the call reaches Atlassian. The key is taken from the prefix of an `issueIdOrKey` (`PLAN-12` → `PLAN`), from a `projectIdOrKey` or `projectKey`, from both ends of a `createIssueLink` (`inwardIssue` and `outwardIssue` — one out-of-scope end is enough to deny the call), or from the project clause of a `searchJiraIssuesUsingJql` query. Keys are compared case-insensitively.
+On top of the tool allowlist, the same hook bounds every Jira read or write that names a project or issue to an allowlist of **project keys**, held in `ATLASSIAN_PROJECTS` in `mcp-policy-check.sh`, which is where the current list lives. A call is allowed only when its key is on that list, and every other project is denied with `project_not_in_allowlist` before the call reaches Atlassian. The key is taken from the prefix of an `issueIdOrKey` (`PLAN-12` → `PLAN`), from a `projectIdOrKey` or `projectKey`, from both ends of a `createIssueLink` (`inwardIssue` and `outwardIssue`, where one out-of-scope end is enough to deny the call), or from the project clause of a `searchJiraIssuesUsingJql` query. Keys are compared case-insensitively.
 
 Two cases fail closed (denied), because the hook cannot resolve them without calling Atlassian: a bare numeric issue id or project id (use the `KEY-123` / `KEY` form instead), and a JQL query that is not bounded to allowlisted projects. A JQL query is accepted only when it is AND-only (no `OR`, no `NOT`, so every clause is conjunctive and a positive project restriction bounds the whole result set) and carries a `project = KEY` or `project in (KEY, ...)` clause naming only allowlisted keys. This deliberately rejects some safe-but-complex queries rather than risk allowing one that escapes the allowlist. The cross-project tools that take no project key (`getVisibleJiraProjects`, `lookupJiraAccountId`, `getIssueLinkTypes`, and the two shared tools) are not bound by the project allowlist, since it cannot express "list only these projects". To change which projects are reachable, edit `ATLASSIAN_PROJECTS` and redeploy the hook.
 
@@ -256,7 +256,7 @@ The next `/mcp` connection attempt will require re-consent.
 | `Connect` opens the browser but the page is blank or shows an Atlassian error | Org-level Remote MCP / Rovo not enabled, or your Atlassian account does not have access to the requested product | Contact an Atlassian admin (max.levine@mhiuk.org / edward@mhiuk.org) to confirm the feature is enabled and your account is provisioned |
 | `mcp__atlassian__*` tool calls fail with `403` or `401` after a successful connect | OAuth scope mismatch: the action requires a scope you did not grant | Disconnect via `/mcp`, reconnect, and grant the missing scope on the consent screen |
 | `mcp.atlassian.com` requests blocked at the network layer | Hook or sandbox not yet updated on this machine | Run `update_ai_governance` and retry, then confirm `mcp.atlassian.com` is in the deployed `managed-settings.json` `network.allowedDomains` |
-| An `mcp__atlassian__<tool>` call is denied with "not in the policy allowlist" | The tool is intentionally blocked: the allowlist permits Jira reads and the six Jira write tools, nothing else | Expected for the Rovo `search`/`fetch` tools and non-Jira products. If you genuinely need a tool, propose adding it to the `is_allowed` function in `mcp-policy-check.sh` through the usual PR process |
+| An `mcp__atlassian__<tool>` call is denied with "not in the policy allowlist" | The tool is intentionally blocked. The allowlist permits Jira reads and the Jira write tools, nothing else | Expected for the Rovo `search`/`fetch` tools and non-Jira products. If you need a tool that is missing, propose adding it to the `is_allowed` function in `mcp-policy-check.sh` through the usual PR process |
 | A call is denied with "Jira project not in the policy allowlist" | The project (or, for `createIssueLink`, either end) is not on `ATLASSIAN_PROJECTS`, or a JQL query is not bounded to allowlisted projects | Use a `KEY-123` issue key or `KEY` project key from an allowlisted project, and write JQL as an AND-only query with a `project = KEY` / `project in (...)` clause. To reach a new project, propose adding its key to `ATLASSIAN_PROJECTS` through the usual PR process |
 
 ### Audit and visibility
@@ -265,7 +265,7 @@ All Jira and Confluence actions made through this MCP appear in Atlassian's stan
 
 ## Deployment
 
-Merging to `main` does **not** auto-deploy — the daily cron picks it up. To push immediately:
+Merging to `main` does **not** auto-deploy. The daily cron picks it up. To push immediately:
 
 ```bash
 update_ai_governance                            # any local user, no sudo
@@ -295,7 +295,7 @@ On suspected bypass:
 
 Most hook errors (`hook exited with non-zero status`, `hook script not found`) mean hooks aren't deployed. Run `update_ai_governance` and retry.
 
-If it persists: confirm hooks exist and are executable in `/opt/claude/hooks/`, check the relevant log in `~/.claude/debug/`, and run `/test-guardrails`. If a command you expect to work is blocked and the log shows a false positive, raise a PR — don't work around it.
+If it persists: confirm hooks exist and are executable in `/opt/claude/hooks/`, check the relevant log in `~/.claude/debug/`, and run `/test-guardrails`. If a command you expect to work is blocked and the log shows a false positive, raise a PR rather than working around it.
 
 ## Change control
 
@@ -307,16 +307,16 @@ Ownership:
 | `.claude/settings.json` (repo-local automation, low-risk allowlists) | Repo maintainers |
 | `~/.claude/settings.json`, `.claude/settings.local.json` (personal/convenience) | Individual engineers |
 
-Engineers may improve convenience inside the rails; they do not control the rails.
+Engineers may improve convenience inside the rails. They do not control the rails.
 
-> **Important:** settings layers control whether Claude *asks* before acting. They do not control what the *hooks* allow. Adding an allow rule locally will not unblock something a hook rejects — that requires a PR to the hook or to `managed-settings.json`.
+> **Important:** settings layers control whether Claude *asks* before acting. They do not control what the *hooks* allow. Adding an allow rule locally will not unblock something a hook rejects. That requires a PR to the hook or to `managed-settings.json`.
 
 ### What needs a PR here
 
 | Request | Target file |
 |---|---|
-| New WebFetch domain | `managed-settings.json` (`network.allowedDomains` — `webfetch-policy-check.sh` reads this list at runtime, no separate hook edit needed) |
-| Restrict a WebFetch domain to a path prefix | `managed-settings.json` (`network._webfetchPathScopes` — WebFetch-only; the OS sandbox and Bash egress still reach any path on the host) |
+| New WebFetch domain | `managed-settings.json` (`network.allowedDomains`, which `webfetch-policy-check.sh` reads at runtime, so no separate hook edit is needed) |
+| Restrict a WebFetch domain to a path prefix | `managed-settings.json` (`network._webfetchPathScopes`, which is WebFetch-only, because the OS sandbox and Bash egress still reach any path on the host) |
 | Allow a currently-blocked Bash command | `bash-policy-check.sh` |
 | New/updated secret-detection pattern | `opt/claude/hooks/lib/redact.sh` |
 | New MCP server | `managed-settings.json` |
@@ -330,9 +330,9 @@ If unsure, raise an issue or contact IT and security.
 
 Before requesting an exception, check whether Claude can reach the same outcome a different way (a different tool, a rephrased command, or generating the command for you to run manually).
 
-If not, open a PR against `main` using the PR template — it prompts for the security risk assessment. If you'd rather not raise the PR yourself, contact max.levine@mhiuk.org or edward@mhiuk.org.
+If not, open a PR against `main` using the PR template, which prompts for the security risk assessment. If you'd rather not raise the PR yourself, contact max.levine@mhiuk.org or edward@mhiuk.org.
 
-The security team reviews against: whether existing controls already cover the use case, prompt-injection exploit risk if widened, and whether a project-level setting would be more appropriate than an org-wide change. Both CODEOWNERS (@edwardmhi, @maxlevine-mhi) must approve. Response within 5 working days; flag urgency in the PR.
+The security team reviews against: whether existing controls already cover the use case, prompt-injection exploit risk if widened, and whether a project-level setting would be more appropriate than an org-wide change. Both CODEOWNERS (@edwardmhi, @maxlevine-mhi) must approve. Response within 5 working days. Flag urgency in the PR.
 
 Approved PRs are tested with `/test-guardrails`, merged, and deployed via the next cron (or `update_ai_governance` for immediate rollout).
 
@@ -361,9 +361,9 @@ What CI covers:
 | YAML validity | `check-yaml` | broken workflow / config YAML |
 | Hygiene | `end-of-file-fixer`, `trailing-whitespace`, `mixed-line-ending`, `check-merge-conflict`, `check-added-large-files`, shebang checks | stray bytes, unresolved conflicts, accidental large files |
 
-> **CI does not verify guardrail *behaviour*.** It checks that scripts parse and configs are valid, not that a given command is still blocked. The `/test-guardrails` suite is the behaviour regression net; a full run is required in the PR description for changes to hooks, permissions, sandbox config, or `managed-settings.json` (see the PR template).
+> **CI does not verify guardrail *behaviour*.** It checks that scripts parse and configs are valid, not that a given command is still blocked. The `/test-guardrails` suite is the behaviour regression net. A full run is required in the PR description for changes to hooks, permissions, sandbox config, or `managed-settings.json` (see the PR template).
 
-`.pre-commit-config.yaml` is in the sandbox write-deny list by design, so Claude Code cannot edit it — the same control that protects `.git/hooks` and `.husky`. Maintainers edit it by hand.
+`.pre-commit-config.yaml` is in the sandbox write-deny list by design, so Claude Code cannot edit it. This is the same control that protects `.git/hooks` and `.husky`. Maintainers edit it by hand.
 
 Optional local install (catches the same issues before you push):
 
@@ -373,7 +373,7 @@ pre-commit install       # runs the hooks on each commit
 pre-commit run --all-files   # run them all on demand
 ```
 
-Pre-commit is bypassable with `git commit --no-verify`, so CI is the real gate; local install is a convenience.
+Pre-commit is bypassable with `git commit --no-verify`, so CI is the enforcing gate. Local install is a convenience.
 
 ## Governance alignment
 
@@ -385,7 +385,7 @@ Pre-commit is bypassable with `git commit --no-verify`, so CI is the real gate; 
 
 Manual AWS setup for the Claude Code audit log pipeline. Provisions the S3 bucket the devices ship logs to, one fleet-wide write-only writer identity, and the read-only investigation access.
 
-This is **Phase 0** of the audit logging rollout. The local JSONL hooks above are the source of the records; this appendix covers shipping them off-box. The device side is already implemented: `ClaudeCode/opt/claude/bin/upload-audit-logs.sh` runs from a daily root cron and uploads new log bytes with `aws s3 cp` (no Vector, no daemon). See [Device side: the uploader](#device-side-the-uploader).
+This is **Phase 0** of the audit logging rollout. The local JSONL hooks above are the source of the records, and this appendix covers shipping them off-box. The device side is already implemented: `ClaudeCode/opt/claude/bin/upload-audit-logs.sh` runs from a daily root cron and uploads new log bytes with `aws s3 cp` (no Vector, no daemon). See [Device side: the uploader](#device-side-the-uploader).
 
 **Upload identity is deliberately simple.** Uploads are not cryptographically attributed to a device. Attribution comes from the `user` and `host` fields stamped into every record (see [Record shape](#record-shape)), so one fleet-wide write-only credential is enough. The trade-offs, and the upgrade path if per-device crypto identity is ever needed, are in [Identity model](#identity-model-and-upgrade-path).
 
@@ -459,11 +459,11 @@ Versioning was enabled automatically by `--object-lock-enabled-for-bucket` in st
 aws s3api get-bucket-versioning --bucket "$BUCKET"   # expect: Status = Enabled
 ```
 
-The uploader writes immutable gzipped deltas with unique keys and never reuses a key, so versioning adds negligible storage in normal operation. Its purpose here is to satisfy Object Lock (step 1.8), which gives the audit trail WORM protection. The lifecycle rule (step 1.6) expires noncurrent versions too, so cost stays bounded.
+The uploader writes immutable gzipped deltas with unique keys and never reuses a key, so versioning adds negligible storage in normal operation. Its purpose here is to satisfy Object Lock (step 1.8), which gives the audit trail Write Once Read Many (WORM) protection. The lifecycle rule (step 1.6) expires noncurrent versions too, so cost stays bounded.
 
 ### 1.5 Confirm Object Ownership is Bucket owner enforced (default)
 
-New buckets default to **Bucket owner enforced**, which disables ACLs. That is what we want: access is governed by IAM/bucket policy only, and the writer policy in section 2 grants no ACL permission. With ACLs disabled, any `PutObject` that specifies an ACL is rejected with `400 AccessControlListNotSupported`; the uploader sends none. Confirm the default:
+New buckets default to **Bucket owner enforced**, which disables ACLs. That is what we want: access is governed by IAM/bucket policy only, and the writer policy in section 2 grants no ACL permission. With ACLs disabled, any `PutObject` that specifies an ACL is rejected with `400 AccessControlListNotSupported`, and the uploader sends none. Confirm the default:
 
 ```bash
 aws s3api get-bucket-ownership-controls --bucket "$BUCKET"
@@ -474,7 +474,7 @@ aws s3api get-bucket-ownership-controls --bucket "$BUCKET"
 
 30 days hot (Standard) → Standard-IA → Glacier Instant Retrieval → delete at 395 days.
 
-**395 days = 13 months.** The current-version `Expiration` (395d) and the Object Lock default retention (step 1.8) express the same 395-day intent; keep them equal so a lifecycle delete never collides with an unexpired lock.
+**395 days = 13 months.** The current-version `Expiration` (395d) and the Object Lock default retention (step 1.8) express the same 395-day intent. Keep them equal so a lifecycle delete never collides with an unexpired lock.
 
 ```bash
 aws s3api put-bucket-lifecycle-configuration \
@@ -530,7 +530,7 @@ aws s3api put-object-lock-configuration \
   }'
 ```
 
-> Keep `s3:BypassGovernanceRetention` off the writer policy (section 2 grants `s3:PutObject` only) and off routine admin roles; restrict it to a named break-glass role. That is what makes the WORM guarantee meaningful: the writer physically cannot delete the audit trail.
+> Keep `s3:BypassGovernanceRetention` off the writer policy (section 2 grants `s3:PutObject` only) and off routine admin roles. Restrict it to a named break-glass role. That is what makes the WORM guarantee meaningful: the writer physically cannot delete the audit trail.
 
 ### 1.9 Tag the bucket
 
@@ -551,7 +551,7 @@ aws s3api put-bucket-tagging \
 
 One IAM user for the whole fleet. Its inline policy allows only `s3:PutObject` under the `claude-audit/` prefix: it cannot read any object, cannot list the bucket, and cannot delete. Because attribution comes from the record contents (`user` / `host`), there is no per-host identity to provision.
 
-The object key layout the uploader writes (the `host` and `user` segments partition the bucket for browsability; they are **not** a security boundary now, since the single writer may write any path under `claude-audit/`):
+The object key layout the uploader writes (the `host` and `user` segments partition the bucket for browsability, and they are **not** a security boundary now, since the single writer may write any path under `claude-audit/`):
 
 ```
 claude-audit/year=YYYY/month=MM/day=DD/host=<host>/user=<user>/<hook>/<epoch>-<offset>-<rand>.log.gz
@@ -585,11 +585,11 @@ aws iam put-user-policy \
   }'
 ```
 
-Writing to a bucket that carries a default retention configuration needs only `s3:PutObject`; retention is applied by the bucket, not the caller (validated 2026-06-24, see [Validating the write-only boundary](#validating-the-write-only-boundary)).
+Writing to a bucket that carries a default retention configuration needs only `s3:PutObject`, because retention is applied by the bucket rather than the caller (validated against the bucket, see [Validating the write-only boundary](#validating-the-write-only-boundary)).
 
 ### 2.3 Create an access key
 
-The secret is returned **exactly once**, capture it now. Store it in 1Password; never redirect it to a file in the repo. It is deployed to each device via Jamf (see [Device side: the uploader](#device-side-the-uploader), parameters `$7`/`$8`). The key is visible to whoever holds Jamf admin, which is acceptable for a write-only key.
+The secret is returned **exactly once**, capture it now. Store it in 1Password, and never redirect it to a file in the repo. It is deployed to each device via Jamf (see [Device side: the uploader](#device-side-the-uploader), parameters `$7`/`$8`). The key is visible to whoever holds Jamf admin, which is acceptable for a write-only key.
 
 ```bash
 aws iam create-access-key --user-name claude-audit-writer
@@ -658,7 +658,7 @@ Add or remove investigators by editing membership of `claude-audit-readers` in y
 
 ### 3.3 Reader workflow
 
-Each investigator configures an SSO profile once and logs in to get temporary credentials; DuckDB's S3 reads use that profile:
+Each investigator configures an SSO profile once and logs in to get temporary credentials. DuckDB's S3 reads use that profile:
 
 ```bash
 aws configure sso --profile claude-audit          # one-time, per machine
@@ -673,7 +673,7 @@ No long-lived reader secrets exist, so there is nothing to commit, rotate, or re
 The uploader ships with the governance pack, so most of this is automatic.
 
 - **What it is:** `ClaudeCode/opt/claude/bin/upload-audit-logs.sh`, deployed to `/opt/claude/bin/` by `pull_claude_governance.sh` (self-updating, like the hooks) and run by a daily root cron at 12:30.
-- **What it ships:** only the six governance hook logs, from every user's `~/.claude/debug/`. It reads each file's new bytes since the last successful run (a per-`(user,hook)` byte offset under `/var/root/.claude-audit-state/`), gzips them, and uploads an immutable delta object. Growing files are never re-uploaded; nothing is overwritten or deleted, and `newsyslog` owns local retention. Claude Code's own debug output and session transcripts are never shipped (the uploader whitelists the six hook names).
+- **What it ships:** only the governance hook logs, from every user's `~/.claude/debug/`. It reads each file's new bytes since the last successful run (a per-`(user,hook)` byte offset under `/var/root/.claude-audit-state/`), gzips them, and uploads an immutable delta object. Growing files are never re-uploaded, nothing is overwritten or deleted, and `newsyslog` owns local retention. Claude Code's own debug output and session transcripts are never shipped, because the uploader whitelists the governance hook names.
 - **Credentials:** the single write-only key at `/var/root/.aws/credentials` (mode 0600), written once by `InstallClaudeGovernance.sh`. The uploader sets `AWS_SHARED_CREDENTIALS_FILE` / `AWS_CONFIG_FILE` explicitly, so it does not depend on the cron environment's `$HOME`.
 
 To enable it on a machine, supply three parameters to the Jamf install policy (alongside the jq/CLT triggers `$4`/`$5`):
@@ -706,30 +706,30 @@ aws s3 rm s3://mhi-claude-audit/claude-audit/year=2026/month=06/day=24/host=prob
   --profile claude-writer
 ```
 
-If the write succeeds and both the `ls` and `rm` return `AccessDenied`, the boundary holds. Note: on a versioned bucket, `aws s3 rm` with no version id only writes a delete marker; the Object-Lock-protected version remains underneath. The probe object is itself WORM-locked for 395 days, so either accept a throwaway probe aging out via lifecycle or validate against a separate scratch bucket.
+If the write succeeds and both the `ls` and `rm` return `AccessDenied`, the boundary holds. Note: on a versioned bucket, `aws s3 rm` with no version id only writes a delete marker, and the Object-Lock-protected version remains underneath. The probe object is itself WORM-locked for 395 days, so either accept a throwaway probe aging out via lifecycle or validate against a separate scratch bucket.
 
 ## Secrets handling
 
-The writer key is a single long-lived static credential; the AWS API returns its secret exactly once, at creation.
+The writer key is a single long-lived static credential, and the AWS API returns its secret exactly once, at creation.
 
 - Never commit it. Store it in 1Password and deploy it only via Jamf, which writes it to `/var/root/.aws/credentials` (0600, root-only) on each machine.
-- It is **write-only** (`s3:PutObject` under the log prefix). A leak cannot read or delete logs; the worst case is junk writes into the prefix (storage noise), which Object Lock and the cost alert both bound.
-- Limit who can run `iam create-access-key` against the user to operators who already hold IAM admin in the logging account; key-creation access *is* credential access.
+- It is **write-only** (`s3:PutObject` under the log prefix). A leak cannot read or delete logs. The worst case is junk writes into the prefix (storage noise), which Object Lock and the cost alert both bound.
+- Limit who can run `iam create-access-key` against the user to operators who already hold IAM admin in the logging account, because key-creation access *is* credential access.
 - Rotate on a schedule or on suspected compromise: create the replacement key, push it via Jamf, confirm uploads continue, then delete the old key.
 
-When this phase is converted to Terraform, the access key will end up in Terraform state; at that point the remote state backend must be encrypted at rest and access-controlled.
+When this phase is converted to Terraform, the access key will end up in Terraform state. At that point the remote state backend must be encrypted at rest and access-controlled.
 
 ## Adding or removing a managed Mac
 
 - **Add:** enrol the Mac in Jamf and run the install policy with parameters `$6`–`$8`. It installs the AWS CLI, writes the shared credential, deploys the uploader, and schedules the cron. No per-machine AWS change.
 - **Remove:** unenrol or wipe via Jamf. There is no per-machine AWS object to delete.
-- **Revocation is fleet-wide, not per-device.** Because every Mac shares one key, you cannot cut off a single lost device without rotating the key for all of them (one `iam create-access-key` / `delete-access-key` cycle plus a Jamf policy update). If per-device revocation ever becomes a hard requirement, that is the trigger to consider the upgrade path below. Existing log data is never purged on offboarding; it stays until lifecycle expiry, erasable early only via the break-glass role for a GDPR obligation.
+- **Revocation is fleet-wide, not per-device.** Because every Mac shares one key, you cannot cut off a single lost device without rotating the key for all of them (one `iam create-access-key` / `delete-access-key` cycle plus a Jamf policy update). If per-device revocation ever becomes a hard requirement, that is the trigger to consider the upgrade path below. Existing log data is never purged on offboarding. It stays until lifecycle expiry, erasable early only via the break-glass role for a GDPR obligation.
 
 ## Identity model and upgrade path
 
 A single shared write-only key keeps Phase 0 small: no per-device provisioning, no certificates, no CA. The accepted costs are fleet-wide revocation (above) and that a leaked key could write junk into the prefix, though it can never read or delete (Object Lock holds).
 
-If per-device identity is ever needed, the upgrade swaps only the credential mechanism; the bucket, uploader, and log format do not change.
+If per-device identity is ever needed, the upgrade swaps only the credential mechanism, and the bucket, uploader, and log format do not change.
 
 ## Cost monitoring
 
@@ -747,4 +747,4 @@ aws budgets create-budget --account-id <acct> --budget '{
 
 £20/month is well above the expected ~£1–2/month for a fleet of this size. Any alert means something is wrong, so investigate before paying it.
 
-> The cost filter keys on a `Project=claude-code-audit` tag. The Terraform applied that tag automatically via `default_tags`; in the manual flow there's no provider to do it for you, so the budget filter is best-effort. When you convert to IaC, restore the `default_tags` block (`Project=claude-code-audit`, `Owner=security`, `ManagedBy=terraform`) so the filter becomes reliable.
+> The cost filter keys on a `Project=claude-code-audit` tag. The Terraform applied that tag automatically via `default_tags`. In the manual flow there's no provider to do it for you, so the budget filter is best-effort. When you convert to IaC, restore the `default_tags` block (`Project=claude-code-audit`, `Owner=security`, `ManagedBy=terraform`) so the filter becomes reliable.
