@@ -93,5 +93,5 @@ case "$tool" in
 esac
 
 # Always allow. This hook is observational; policy hooks (bash-policy,
-# webfetch-policy) are responsible for actual denies.
+# webfetch-policy) are the ones that deny.
 echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'

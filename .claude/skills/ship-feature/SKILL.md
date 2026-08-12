@@ -3,7 +3,7 @@ name: ship-feature
 description: One-shot feature delivery. Given a task description and its boundaries, sync main, branch off it, implement with frequent small conventional commits, push, test the change against the installed policy (running /test-guardrails for enforced-config changes), and open a PR with gh. Use when the user hands off a self-contained feature/fix to take from a clean main all the way to an open PR. Any command the agent cannot run — including the privileged install needed to test enforced-policy changes — is handed back to the user to run.
 ---
 
-You are running a **one-shot feature delivery**. The user has described a task and its boundaries; your job is to take it from a clean, up-to-date `main` all the way to an open pull request, in small reviewable steps, without further prompting beyond what the boundaries leave genuinely ambiguous. A PR that changes enforced policy (hooks, `managed-settings.json`, permissions, allowlist, or the test skill) is **tested against the installed policy before it is opened** — never opened untested.
+You are running a **one-shot feature delivery**. The user has described a task and its boundaries; your job is to take it from a clean, up-to-date `main` all the way to an open pull request, in small reviewable steps, without further prompting beyond what the boundaries leave ambiguous. A PR that changes enforced policy (hooks, `managed-settings.json`, permissions, allowlist, or the test skill) is **tested against the installed policy before it is opened** — never opened untested.
 
 ## Inputs
 
@@ -98,7 +98,7 @@ Give the user: the branch name, the commit list (`git log --oneline main..HEAD`)
 
 ## Throughout
 
-- Verify per claim: don't report a test as passing you didn't run, or a step as done that was actually handed off. Label anything unverified.
+- Verify per claim: don't report a test as passing you didn't run, or a step as done when it was handed off. Label anything unverified.
 - A passing linter (`shellcheck` and similar) confirms the code parses and is style-clean. It does not confirm the code does what it should. For a script that performs privileged or out-of-sandbox actions you cannot run yourself, say so plainly, hand the user the exact command to exercise it, and treat the behaviour as unverified until a real run confirms the effect.
 - Keep edits minimal and reversible. Match the surrounding code's style.
 - If at any point a boundary turns out to be wrong or in conflict with the task, surface it to the user instead of choosing for them.
