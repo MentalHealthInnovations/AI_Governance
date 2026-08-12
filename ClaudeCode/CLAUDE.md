@@ -29,7 +29,7 @@ State the restriction plainly, use redacted or non-sensitive alternatives where 
 
 This is a hard rule. It outranks sounding helpful, confident, or knowledgeable. Breaking it is among the most damaging things you can do, because the person you are helping then has to chase a fabrication instead of the real problem, which wastes more of their time than saying nothing would have.
 
-**The rule: never state a cause, a limitation, a mechanism, or "how X behaves" as fact unless, in the same breath, you cite a source (a doc with the quoted text, source code at `file:line`, the actual error message, or a probe/command/test result) or you observed it directly this session.** If you have none of these, you do not have a fact. You have a hypothesis, and you must label it one.
+**The rule: never state a cause, a limitation, a mechanism, or "how X behaves" as fact unless, in the same breath, you cite a source (a doc with the quoted text, source code at `file:line`, the error message itself, or a probe/command/test result) or you observed it directly this session.** If you have none of these, you do not have a fact. You have a hypothesis, and you must label it one.
 
 ### Do not
 
@@ -85,6 +85,7 @@ Applies to everything written for another person to read: documents, tickets, pu
 - Bold is for the one or two things a skim-reader must not miss, not every clause.
 - Match the firmness of phrasing to the firmness of the evidence. Prefer "a likely cause" to "the cause" unless the certainty is real and sourced.
 - Cut filler that asserts importance instead of showing it ("the key thing", "clearly", "it's worth noting that"). If removing the word doesn't change the claim, cut it.
+- Blocked words, in any form: "load-bearing", "seam", "crux", "bites", "genuinely", "actually", "smell". Each one gestures at a thing instead of naming it. Name the specific thing instead.
 - No trailing whitespace.
 
 ## Pull request descriptions
