@@ -52,6 +52,9 @@ __REDACT_PATTERNS=(
   "STRIPE_KEY"         '(sk|pk|rk)_(live|test)_[A-Za-z0-9]{24,}'
   "SLACK_TOKEN"        'xox[baprs]-[A-Za-z0-9-]{10,}'
   "JWT"                'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+'
+  # AUTH_HEADER selects candidates only. "Bearer", "Token" and "Basic" are all
+  # ordinary English words, so the value is then checked by the shape guard in
+  # redact_text before anything is replaced — see __REDACT_CRED_SHAPE.
   "AUTH_HEADER"        '([Bb][Ee][Aa][Rr][Ee][Rr]|[Tt][Oo][Kk][Ee][Nn]|[Bb][Aa][Ss][Ii][Cc])[[:space:]]+[A-Za-z0-9_.~+/=-]{8,}'
   "TWILIO_KEY"         'SK[a-f0-9]{32}'
   "SENDGRID_KEY"       'SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}'
@@ -66,6 +69,28 @@ __REDACT_PATTERNS=(
 # untouched. (sed ERE has no negative lookahead, so this exclusion is applied
 # as a bash-level guard rather than inside the pattern.)
 __REDACT_PLACEHOLDER='(example|placeholder|your[-_]|xxx|changeme|dummy|fake|test|sample)'
+
+# Shape guard for AUTH_HEADER. The pattern's three markers are English words, so
+# it matched ordinary prose whenever 8 or more value characters followed one of
+# them: "basic commands", "Token Authentication", "Bearer implementation-fix".
+# A value is treated as credential material when it contains a digit, or two or
+# more uppercase letters (base64 basic-auth and opaque tokens both qualify; a
+# single capital does not, so a capitalised English word is left alone).
+#
+# Applied in awk rather than inside the ERE for the same reason as the
+# placeholder guard: ERE has no negative lookahead. Unlike that guard this one
+# runs per occurrence, not per line, so prose and a real token on the same line
+# are handled independently.
+#
+# Known miss: an all-lowercase, digit-free value ("token abcdefghijkl") is
+# indistinguishable from an English word by shape alone and is left alone. The
+# branded formats that shape could hide (JWT, GitHub PAT, Slack, Stripe, sk-)
+# have their own patterns above and are unaffected.
+__REDACT_CRED_SHAPE='function looks_like_credential(v,   n) {
+  if (v ~ /[0-9]/) return 1
+  n = gsub(/[A-Z]/, "", v)
+  return (n >= 2)
+}'
 
 # redact_text: redacts secrets and reports which patterns matched.
 #
@@ -110,6 +135,26 @@ redact_text() {
         -v kv="$regex" \
         -v ph="${__REDACT_KEY_PREFIX}\"?${__REDACT_PLACEHOLDER}" \
         '{ if ($0 ~ ph) { print } else if ($0 ~ kv) { gsub(kv, "[REDACTED]"); print } else { print } }')"
+    elif [[ "$name" == "AUTH_HEADER" ]]; then
+      # Walks each candidate with match()/RSTART/RLENGTH (the same idiom
+      # pii-patterns.sh uses) so the shape guard runs on one occurrence at a
+      # time. The marker word and its trailing whitespace are stripped off
+      # before the guard sees the value.
+      current="$(printf '%s' "$current" | awk -v re="$regex" \
+        "${__REDACT_CRED_SHAPE}"'
+        {
+          line = $0
+          out = ""
+          while (match(line, re) > 0) {
+            hit = substr(line, RSTART, RLENGTH)
+            out = out substr(line, 1, RSTART - 1)
+            line = substr(line, RSTART + RLENGTH)
+            val = hit
+            sub(/^[A-Za-z]+[[:space:]]+/, "", val)
+            if (looks_like_credential(val)) { out = out "[REDACTED]" } else { out = out hit }
+          }
+          print out line
+        }')"
     else
       current="$(printf '%s' "$current" | sed -E "s#${regex}#[REDACTED]#g")"
     fi
