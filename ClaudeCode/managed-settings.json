@@ -203,7 +203,9 @@
 
     "filesystem": {
       "allowRead": [
-        "."
+        ".",
+        "~/.config/gh/config.yml",
+        "~/.config/gh/hosts.yml"
       ],
       "allowWrite": [
         ".",
@@ -226,7 +228,7 @@
         "./.git/packed-refs",
         "./.git/packed-refs.lock"
       ],
-      "_comment_ghConfig": "~/.config/gh is deliberately absent from denyRead: the gh binary must read its own config.yml/hosts.yml to authenticate when run under sandboxed Bash. Claude-level access to those files remains blocked by the Read(~/.config/gh/**) permission deny above and by the gh_config_path pre-block in bash-policy-check.sh — do not re-add it here without revisiting both.",
+      "_comment_ghConfig": "~/.config/gh is deliberately absent from denyRead, and the two files gh reads to authenticate are named in allowRead above. Leaving them out of denyRead is not enough on its own: Read and Edit permission denies merge into the sandbox filesystem boundary, so Read(~/.config/gh/**) below also stopped the gh binary from reading its own config under sandboxed Bash, and every gh invocation failed with 'failed to load config: operation not permitted'. The allowRead entries name config.yml and hosts.yml exactly, so they are more specific than the deny region they sit inside and re-open only those two files rather than the directory. The permission deny still applies to the Read tool, which is evaluated for the tool call and not by the sandbox, so the agent cannot read the token even though the binary can. Two controls cover the rest: the gh_config_path pre-block in bash-policy-check.sh refuses any Bash command naming these paths, and the GITHUB_PAT pattern in lib/redact.sh redacts a gho_/ghp_ token that reaches tool output another way. Residual: the sandbox boundary is per command, not per binary, so a sandboxed command that reaches these two files without naming them literally is not stopped by the OS layer. Narrowing this further means dropping the permission deny and moving the agent-level block into a PreToolUse hook, which is the route to take if a gh release starts reading a third file here.",
       "denyRead": [
         "~/.ssh",
         "~/.aws",
