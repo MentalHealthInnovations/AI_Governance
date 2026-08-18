@@ -85,7 +85,15 @@ if printf '%s' "$cmd" | grep -Eqi 'base64\s+(-d|--decode)'; then
   emit_deny "base64_decode" "Decode-and-execute pattern blocked"
 fi
 
-if printf '%s' "$cmd" | grep -Eqi '(^|\s)(--force|-D|--force-delete|--no-verify)\b'; then
+if printf '%s' "$cmd" | grep -Eqi '(^|\s)(--force|--force-delete|--no-verify)\b'; then
+  emit_deny "dangerous_flag" "Dangerous flag blocked by policy"
+fi
+
+# -D is checked case-sensitively and on its own, deliberately. The target is
+# `git branch -D` (force-delete). Folding it into the case-insensitive check
+# above matched lowercase -d as well, which blocked ordinary read-only commands:
+# `ls -d`, `sort -d`, `grep -d skip`, `find -d`. Do not merge these two greps.
+if printf '%s' "$cmd" | grep -Eq '(^|\s)-D\b'; then
   emit_deny "dangerous_flag" "Dangerous flag blocked by policy"
 fi
 
