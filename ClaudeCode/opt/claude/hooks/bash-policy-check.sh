@@ -320,11 +320,12 @@ segment_allowed() {
 # `"a\|b\|c"`) are not treated as segment boundaries. The allowlist only needs to see
 # each segment's leading verb, which lives outside any quoted argument.
 #
-# printf '%s\n' (NOT '%s'): the trailing newline is load-bearing. `read` returns
-# non-zero on an unterminated final line, so with '%s' the while loop never ran
-# for the LAST segment — meaning any single command with no chain operators
-# bypassed the allowlist entirely (verified 2026-08-05: `basename /tmp/x` was
-# allowed while `basename /tmp/x && ls` was denied on its first segment).
+# printf '%s\n' (not '%s'): the trailing newline is what lets `read` see the final
+# segment. `read` returns non-zero on an unterminated final line, so with '%s' the
+# while loop never ran for the last segment, meaning any single command with no
+# chain operators bypassed the allowlist entirely (verified 2026-08-05:
+# `basename /tmp/x` was allowed while `basename /tmp/x && ls` was denied on its
+# first segment).
 while IFS= read -r segment; do
   if ! segment_allowed "$segment"; then
     audit_emit "$payload" deny \
