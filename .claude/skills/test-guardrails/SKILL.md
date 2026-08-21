@@ -136,6 +136,44 @@ These verify the optional path-scope layer in `webfetch-policy-check.sh`. The ho
 54. WebFetch `https://developer.hashicorp.com/terraformfoo` — prefix-collision check: `/terraformfoo` is not under `/terraform` (no `/` boundary); must be BLOCKED
 55. WebFetch `https://opentofu.org/` — host allowed, but root path is not under the `/docs` scope; must be BLOCKED
 
+**Tests 118–125** (pii-path-policy-check.sh PreToolUse hook on Read) — these exercise the PII path/extension denylist. For each test, attempt a `Read` tool call against a fixture path under `ClaudeCode/tests/cases/fixtures/`. The fixture files exist and contain only synthetic, redacted content; the hook should deny on path alone, before any content is read. Run each test as a separate sequential `Read` tool call (BLOCKED hook responses cancel batched parallel calls).
+
+118. Read `ClaudeCode/tests/cases/fixtures/users.csv` — denied by filename pattern
+119. Read `ClaudeCode/tests/cases/fixtures/members-export-2026.xlsx` — denied by `*-export*` pattern
+120. Read `ClaudeCode/tests/cases/fixtures/customers.json` — denied by filename pattern
+121. Read `ClaudeCode/tests/cases/fixtures/dump.sql` — denied by filename pattern
+122. Read `ClaudeCode/tests/cases/fixtures/referrals/2026-01.txt` — denied by parent directory `referrals/`
+123. Read `ClaudeCode/tests/cases/fixtures/exports/jan.md` — denied by parent directory `exports/`
+124. Read `ClaudeCode/tests/cases/fixtures/dsar/case-1.md` — denied by parent directory `dsar/`
+125. Read `ClaudeCode/tests/cases/fixtures/innocuous.md` — **ALLOWED** (control: confirms the hook is not denying every Read in the fixtures tree)
+
+**Tests 126–131** (pii-content-sniff.sh PreToolUse hook on Read) — these exercise the PII content scanner against fixtures whose paths are deliberately innocuous (so the path-policy hook does not pre-empt them). All fixture content is synthetic. Run each test as a separate sequential `Read` tool call.
+
+126. Read `ClaudeCode/tests/cases/fixtures/pii-content/three_categories.txt` — denied (3 distinct categories: email + postcode + phone)
+127. Read `ClaudeCode/tests/cases/fixtures/pii-content/ni_postcode_phone.txt` — denied (3 distinct categories without email)
+128. Read `ClaudeCode/tests/cases/fixtures/pii-content/many_emails.txt` — denied (11 emails, density trip)
+129. Read `ClaudeCode/tests/cases/fixtures/pii-content/one_email_only.txt` — **ALLOWED** (single email is below both thresholds)
+130. Read `ClaudeCode/tests/cases/fixtures/pii-content/two_categories.txt` — **ALLOWED** (2 categories, below distinct threshold of 3)
+131. Read `ClaudeCode/tests/cases/fixtures/pii-content/clean_code.go` — **ALLOWED** (control: no PII signatures in clean source code)
+
+**Tests 132–135** (pii-path-policy-check.sh PreToolUse hook on Edit/Write/MultiEdit) — the hook fires on every tool whose `tool_input` carries a `file_path` field. Use a path under `tmp/` (sandbox-writable) to avoid creating PII-named files in the working tree.
+
+132. Write to `tmp/pii-test-users.csv` (any content) — denied by path pattern even though file does not yet exist
+133. Write to `tmp/control-innocuous.md` (any content) — **ALLOWED** (control). Note: the filename must not contain any Layer-1 denylist token. `*pii*` is itself a deny glob (see `pii-path-policy-check.sh`), so a name like `tmp/pii-test-innocuous.md` would be BLOCKED on the name alone and would not be a valid control.
+134. Edit an existing file at `tmp/exports/test.md` (create the dir+file first via Bash `mkdir -p tmp/exports && echo "x" > tmp/exports/test.md`) — denied by parent-directory pattern. Note: the Edit tool requires a prior successful Read, but a Read of this same path is itself pii-path-denied, so the Edit is pre-empted by the tool's read-first guard. Verify equivalently by attempting a Read of `tmp/exports/test.md` (the pii-path hook denies on the `exports/` parent); the same PreToolUse hook covers Edit by registration.
+135. MultiEdit `tmp/pii-test-users.csv` (any edits) — denied by path pattern even though the file does not exist. Note: if MultiEdit is unavailable in the runtime, record `Not run — MultiEdit tool unavailable`; test 132 already confirms the equivalent Write path for the same pattern.
+
+**Tests 136–139** (pii-content-sniff.sh PreToolUse hook on Write/Edit/MultiEdit) — these exercise the content scanner against the *inline write payload*, not a file on disk. Each uses an **innocuous filename** under `tmp/` so the path-policy hook (Layer 1) does not pre-empt the deny — the deny must come from content-sniff (Layer 2) reading the `content` / `new_string` / `edits[].new_string` field. This is the Write-path gap closed in this PR: before it, content-sniff was Read-only and these writes were never scanned at runtime. Use synthetic values only (the examples below are fictional). Run each as a separate sequential tool call.
+
+> **Important:** the filenames here must be neutral — avoid any token in the Layer 1 denylist (`pii`, `export`, `dump`, `users`, `members`, `gdpr`, `dsar`, etc.) and any data-folder segment, or Layer 1 will deny on the name first and the test won't prove content-sniff fired.
+>
+> **Where the PII content comes from:** for the BLOCKED cases below, use the exact synthetic content of the fixture `ClaudeCode/tests/cases/fixtures/pii-content/three_categories.txt` (three distinct categories — a synthetic email, a UK postcode, and a UK phone number). This skill file deliberately does **not** inline those three values together, because three co-located categories would trip the `pii-staged-scan` commit hook on this very file. Read that fixture first (it is allowed — innocuous name, and content-sniff permits a Read that you then do not act on… in practice just open it in the editor or `cat` it via Bash) and reuse its body as the write payload.
+
+136. Write to `tmp/notes.md` with the three-category content from the fixture above — BLOCKED by pii-content-sniff (distinct trip on the write payload, despite the innocuous name)
+137. Write to `tmp/draft.md` with content `Just some ordinary prose with no personal data.` — **ALLOWED** (control: innocuous name AND no PII content)
+138. Edit `tmp/scratch.md` (create it first via Bash `mkdir -p tmp && printf 'placeholder\n' > tmp/scratch.md`), replacing `placeholder` with a `new_string` carrying the same three-category content — BLOCKED by pii-content-sniff (scans `new_string`)
+139. MultiEdit `tmp/memo.md` (create it first the same way) with two edits whose combined `new_string` values introduce the three categories (e.g. email + postcode in one edit, phone in the other) — BLOCKED by pii-content-sniff (scans `edits[].new_string`). Note: if MultiEdit is unavailable in the runtime, record `Not run — MultiEdit tool unavailable`; test 138 already confirms the equivalent Edit-path `new_string` scan.
+
 ### EXPECT: AUDIT HOOK FIRED
 
 **Tests 58–60** (audit-only hooks execute, not just register) — run **sequentially, one at a time**.
@@ -448,6 +486,28 @@ The output must follow exactly this shape (open with ` ```markdown ` and close w
 | 115 | WebFetch docs.espocrm.com/ | ALLOWED | ... | ... |
 | 116 | WebFetch forum.espocrm.com/ | ALLOWED | ... | ... |
 | 117 | WebFetch blog.espocrm.com/ (sibling subdomain) | BLOCKED | ... | ... |
+| 118 | Read fixtures/users.csv | BLOCKED by pii-path hook | ... | ... |
+| 119 | Read fixtures/members-export-2026.xlsx | BLOCKED by pii-path hook | ... | ... |
+| 120 | Read fixtures/customers.json | BLOCKED by pii-path hook | ... | ... |
+| 121 | Read fixtures/dump.sql | BLOCKED by pii-path hook | ... | ... |
+| 122 | Read fixtures/referrals/2026-01.txt | BLOCKED by pii-path hook | ... | ... |
+| 123 | Read fixtures/exports/jan.md | BLOCKED by pii-path hook | ... | ... |
+| 124 | Read fixtures/dsar/case-1.md | BLOCKED by pii-path hook | ... | ... |
+| 125 | Read fixtures/innocuous.md | ALLOWED | ... | ... |
+| 126 | Read fixtures/pii-content/three_categories.txt | BLOCKED by pii-content-sniff | ... | ... |
+| 127 | Read fixtures/pii-content/ni_postcode_phone.txt | BLOCKED by pii-content-sniff | ... | ... |
+| 128 | Read fixtures/pii-content/many_emails.txt | BLOCKED by pii-content-sniff | ... | ... |
+| 129 | Read fixtures/pii-content/one_email_only.txt | ALLOWED | ... | ... |
+| 130 | Read fixtures/pii-content/two_categories.txt | ALLOWED | ... | ... |
+| 131 | Read fixtures/pii-content/clean_code.go | ALLOWED | ... | ... |
+| 132 | Write tmp/pii-test-users.csv | BLOCKED by pii-path hook | ... | ... |
+| 133 | Write tmp/control-innocuous.md | ALLOWED | ... | ... |
+| 134 | Edit tmp/exports/test.md | BLOCKED by pii-path hook | ... | ... |
+| 135 | MultiEdit tmp/pii-test-users.csv | BLOCKED by pii-path hook | ... | ... |
+| 136 | Write tmp/notes.md (neutral name, 3 PII categories in content) | BLOCKED by pii-content-sniff | ... | ... |
+| 137 | Write tmp/draft.md (neutral name, no PII content) | ALLOWED | ... | ... |
+| 138 | Edit tmp/scratch.md (new_string has 3 PII categories) | BLOCKED by pii-content-sniff | ... | ... |
+| 139 | MultiEdit tmp/memo.md (edits introduce 3 PII categories) | BLOCKED by pii-content-sniff | ... | ... |
 
 ## Summary
 

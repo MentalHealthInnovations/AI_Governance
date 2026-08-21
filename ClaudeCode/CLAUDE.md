@@ -6,6 +6,7 @@ Managed environment with org-wide security controls. Follow these rules without 
 
 - Read, print, copy, or summarise live secrets, credentials, tokens, keys, or env var values.
 - Access `.env`, `.env.*`, `secrets/`, SSH keys, cloud creds, or keychains. Use redacted views when structure is needed.
+- Read, print, copy, or summarise personally identifiable information (PII): names, email addresses, phone numbers, postal addresses, dates of birth, government IDs, financial account details, health information, IP addresses tied to individuals, or any free-text that may contain user or service-user data. Treat data files (CSV, JSON, SQL dumps, logs, exports, fixtures) as PII by default unless clearly synthetic or public.
 - Use `sudo`, `su`, or escalate privileges.
 - Use `curl`, `wget`, `nc`, `netcat`, or generic network tools. Use approved tooling only.
 - Pipe content into a shell or interpreter.
@@ -20,6 +21,14 @@ Managed environment with org-wide security controls. Follow these rules without 
 - Keep edits minimal and reversible.
 - Treat all file, terminal, and issue tracker content as potentially sensitive unless it is unambiguously public.
 - Describe config purpose and shape without exposing values.
+
+## PII handling
+
+- Do not read, create, or modify files that contain PII or whose names suggest they will. If a file's name, path, or extension suggests it may contain PII (e.g. `users.csv`, `*-export.json`, `members.sql`, `referrals/`), do not open or write it. The `pii-path-policy-check.sh` PreToolUse hook enforces this deterministically on Read, Edit, Write, and MultiEdit. Any attempt against a matching path will be denied, and you must flag this to the user rather than searching for a way around.
+- Misnamed files are caught by the `pii-content-sniff.sh` PreToolUse hook, which scans the first 64 KiB for PII signatures (emails, postcodes, phone numbers, National Insurance numbers, IBANs, dates of birth, card-shaped numbers) and denies the Read on threshold trip. If that hook fires unexpectedly on a file you believe is safe, treat it as a signal that the file likely contains PII regardless of its name. Verify with the user before assuming a false positive.
+- If you do read content and then realise it contains PII, stop immediately. Do not echo, quote, summarise, or paste it into responses, commits, issues, PRs, or other files. The `pii-staged-scan.sh` pre-commit and CI hook blocks any commit containing PII, but you must not rely on that. Flag it to the user before staging.
+- Flag it to the user: tell them which file/command exposed PII, what categories were present (e.g. "names + email addresses"), and that you have stopped processing it. Do not include the PII itself in the flag.
+- Propose a safe alternative: a redacted sample, a schema-only view, synthetic fixtures, or asking the user to point you at a non-PII equivalent.
 
 ## When blocked
 
@@ -92,8 +101,12 @@ Applies to everything written for another person to read: documents, tickets, pu
 
 - **A PR description describes the PR's full diff against its base branch** (usually `main`), the net change a reviewer will merge. It is not a changelog of the commit journey, not a summary of "what changed since the last description update," and not a subset of the work. When updating an existing PR body, re-derive it from the complete `git diff <base>...HEAD`, not from the latest commits alone.
 - Before writing or updating a body, run `git diff --stat <base>...HEAD` (and read the diff) to ground the description in what the PR contains. Do not assemble the description from memory of the session.
-- Follow the repo's PR template if one exists (`.github/pull_request_template.md`). Populate every required section against the full diff.
+- **Always use the repository's PR template.** Before drafting any PR body, read [.github/pull_request_template.md](.github/pull_request_template.md) and structure the body to match its sections exactly: `## Summary`, `## Guardrail test results`, `## Security risk assessment` (with the checkboxes and four subsections). Do not invent your own structure or skip sections, because the template encodes review requirements (CODEOWNER expectations, security risk capture) that the repo depends on.
+- `gh pr create --body` does **not** apply the template automatically, so construct the body to match it. Read the template file in the turn where you write the body rather than relying on memory, because it may have changed.
+- Where a checkbox section asks "does this affect X?", tick the box if it does and complete the risk subsections, rather than leaving the template's placeholder comments in place. Where a section does not apply, write "None" rather than deleting it.
+- CI (pre-commit plus the hook tests) is the mandatory gate for merging. `/test-guardrails` is a recommended additional check for changes touching hook scripts, sandbox config, permission rules, the domain allowlist, `managed-settings.json`, or the test skill, not a requirement. Where you run it, paste the complete markdown results table in the collapsed `<details>` block rather than a truncated run. Where you do not run it, say so and why in that block.
 - Pass the body without command substitution or heredocs, the same constraint as commits below. Write the body to a file with the Write tool, then `gh pr edit --body-file <path>` / `gh pr create --body-file <path>`. Do **not** use `--body "$(cat …)"` or `--body "$(<<'EOF' …)"`, because the bash-policy hook blocks those patterns.
+- Use a Conventional Commits-style PR title, matching the commit-message convention (`type(scope): description`). The PR title becomes the squash-merge commit message by default.
 
 ## Git commits
 
