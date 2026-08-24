@@ -72,7 +72,7 @@ trigger_jamf_install() {
   jamf policy -event "$trigger"
   if ! "$@" &>/dev/null; then
     echo "Jamf trigger '$trigger' ran but $resource is still missing." >&2
-    echo "Check the policy is scoped to this machine and that it actually installs $resource." >&2
+    echo "Check the policy is scoped to this machine and that it installs $resource." >&2
     return 1
   fi
   echo "$resource installed."
