@@ -47,4 +47,12 @@ if ! "$here/run_wild_corpus_cases.sh"; then
 fi
 echo
 
+# Redaction library: pattern and guard cases run directly against
+# redact_text() in lib/redact.sh, not through a hook payload.
+echo "=== lib/redact.sh ==="
+if ! "$here/run_redact_cases.sh"; then
+  overall_fail=1
+fi
+echo
+
 exit "$overall_fail"
