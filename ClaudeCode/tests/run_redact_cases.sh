@@ -8,22 +8,22 @@
 # Defaults to cases/redact.jsonl next to this script.
 #
 # This exercises redact_text() from opt/claude/hooks/lib/redact.sh directly
-# rather than driving output-redact.sh with a hook payload. The library is where
-# every pattern and guard lives, and calling it directly keeps a failure
-# pointing at the pattern rather than at the hook's JSON plumbing.
+# rather than driving output-redact.sh with a hook payload. Every pattern and
+# guard lives in the library, so calling it directly keeps a failure pointing at
+# the pattern rather than at the hook's JSON plumbing.
 #
-# Like the other runners here, this is not wired into the bash-policy allowlist:
-# run it from a normal shell, not from inside an agent session.
+# Like the other runners here, this is not wired into the bash-policy allowlist.
+# Run it from a normal shell, not from inside an agent session.
 #
-# Case file format: one JSON object per line with fields:
-#   name      — short label printed in the output
-#   text      — the text passed to redact_text
-#   expect    — "redacted" (at least one [REDACTED] appears) or "clear"
-#               (text comes back byte-identical and no pattern matched)
-#   pattern   — optional; pattern name that must appear in the match sentinel
-#   survives  — optional; substring that must still be present after redaction.
-#               Use this to pin per-occurrence behaviour: on a line holding both
-#               prose and a credential, the prose has to come back intact.
+# Case file format is one JSON object per line, with these fields.
+#   name       short label printed in the output
+#   text       the text passed to redact_text
+#   expect     "redacted" (at least one [REDACTED] appears) or "clear" (text
+#              comes back byte-identical and no pattern matched)
+#   pattern    optional. Pattern name that must appear in the match sentinel
+#   survives   optional. Substring that must still be present after redaction,
+#              which pins per-occurrence behaviour. On a line holding prose and
+#              a credential, the prose has to come back intact.
 set -u
 
 here="$(cd "$(dirname "$0")" && pwd)"
