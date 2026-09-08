@@ -156,13 +156,14 @@ if printf '%s' "$cmd" | grep -Eqi '^tfsec\b.*\s--update\b'; then
   emit_deny "tfsec_update" "tfsec --update blocked by policy"
 fi
 
-# gh's config dir (~/.config/gh) is readable by the OS sandbox so the gh binary
-# can authenticate (see _comment_ghConfig in managed-settings.json). gh itself
-# never takes its config path as an argument, so any command text naming that
-# path is an attempt to read the OAuth token with an allowlisted text tool
-# (cat/grep/sed/...). Checked against the raw command so quoted paths are
-# caught too. Glob-evasion variants that dodge this literal match are still
-# covered by output-redact.sh (GITHUB_PAT pattern in lib/redact.sh).
+# gh's config dir (~/.config/gh) is denied at the sandbox and permission layers
+# (see _comment_ghConfig in managed-settings.json); this block is the text-level
+# backstop. gh itself never takes its config path as an argument, so any command
+# text naming that path is an attempt to read the OAuth token with an
+# allowlisted text tool (cat/grep/sed/...). Checked against the raw command so
+# quoted paths are caught too. Variants that dodge this literal match are still
+# covered by the OS-level denyRead and, in tool output, by output-redact.sh
+# (GITHUB_PAT pattern in lib/redact.sh).
 if printf '%s' "$cmd" | grep -Eqi '\.config/gh(/|[[:space:]]|$)|gh/hosts\.ya?ml'; then
   emit_deny "gh_config_path" "Direct access to gh config/auth files blocked by policy"
 fi
